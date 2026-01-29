@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Unikaj Kulek - Gra 2D w HTML5</title>
+    <style>
+      body { margin: 0; background: #f0f0f0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif; }
+      canvas { border: 2px solid #333; background: white; }
+    </style>
+  </head>
+  <body>
+    <canvas width="900" height="600"></canvas>
+    <script>
+      const canvas = document.querySelector("canvas");
+      const ctx = canvas.getContext("2d");
+
+      let rightPressed = false;
+      let leftPressed = false;
+      let playerX = canvas.width / 2;
+      const playerSize = 50;
+      const squares = [];
+      let score = 0;
+
+      // Sterowanie klawiaturą
+      document.addEventListener("keydown", keyDownHandler, false);
+      document.addEventListener("keyup", keyUpHandler, false);
+
+      function keyDownHandler(e) {
+        if (e.key === "Right" || e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
+          rightPressed = true;
+        } else if (e.key === "Left" || e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
+          leftPressed = true;
+        }
+      }
+
+      function keyUpHandler(e) {
+        if (e.key === "Right" || e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
+          rightPressed = false;
+        } else if (e.key === "Left" || e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
+          leftPressed = false;
+        }
+      }
+
+      // Inicjalizacja spadających kwadratów (kulek)
+      for (let i = 0; i < 5; i++) {
+        squares.push({
+          x: Math.random() * (canvas.width - playerSize),
+          y: Math.random() * -canvas.height,
+          size: playerSize,
+        });
+      }
+
+      // Rysuj gracza (czerwony kwadrat)
+      function drawPlayer() {
+        ctx.beginPath();
+        ctx.rect(playerX, canvas.height - playerSize - 5, playerSize, playerSize);
+        ctx.fillStyle = "red";
+        ctx.fill();
+        ctx.closePath();
+      }
+
+      // Rysuj i poruszaj kwadratami, sprawdzaj kolizje
+      function drawSquares() {
+        squares.forEach((square) => {
+          ctx.beginPath();
+          ctx.rect(square.x, square.y, square.size, square.size);
+          ctx.fillStyle = "blue";
+          ctx.fill();
+          ctx.closePath();
+
+          // Spadaj w dół
+          square.y += 3;
+          if (square.y > canvas.height) {
+            square.y = 0 - square.size;
+            square.x = Math.random() * (canvas.width - playerSize);
+          }
+
+          // Kolizja
+          if (
+            playerX < square.x + square.size &&
+            playerX + playerSize > square.x &&
+            canvas.height - playerSize - 5 < square.y + square.size
+          ) {
+            alert("Game Over! Twój wynik: " + score);
+            document.location.reload();
+          }
+        });
+      }
+
+      // Wynik
+      function drawScore() {
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "black";
+        ctx.fillText("Wynik: " + score, 20, 30);
+      }
+
+      // Pętla gry (60 FPS)
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Ramka
+        ctx.beginPath();
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+        ctx.closePath();
+
+        drawPlayer();
+        drawSquares();
+        drawScore();
+
+        // Ruch gracza
+        if (rightPressed) {
+          playerX = Math.min(playerX + 7, canvas.width - playerSize);
+        } else if (leftPressed) {
+          playerX = Math.max(playerX - 7, 0);
+        }
+
+        requestAnimationFrame(draw);
+      }
+
+      // Start gry
+      draw();
+
+      // Zwiększaj wynik co sekundę
+      setInterval(() => {
+        score++;
+      }, 1000);
+    </script>
+  </body>
+</html>
