@@ -17,22 +17,22 @@
       }
       .scene {
         position: relative;
-        width: 900px;
+        width: 1040px;
         height: 600px;
         display: flex;
         justify-content: center;
         align-items: center;
       }
-      .skeleton-wrap {
+      svg.skeleton-wrap {
         position: absolute;
-        width: 900px;
+        width: 1040px;
         height: 600px;
         top: 0; left: 0;
         pointer-events: none;
         z-index: 0;
       }
       canvas {
-        border: 2px solid #555;
+        border: 3px solid #333;
         background: black;
         position: relative;
         z-index: 1;
@@ -41,113 +41,198 @@
   </head>
   <body>
     <div class="scene">
-      <svg class="skeleton-wrap" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+      <svg class="skeleton-wrap" viewBox="0 0 1040 600" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <style>
+            .bone { fill: none; stroke: #ddd; stroke-linecap: round; stroke-linejoin: round; }
+          </style>
+        </defs>
 
-        <!-- LEFT ARM (animates up/down) -->
-        <g id="arm-left">
-          <!-- upper arm -->
-          <line x1="168" y1="310" x2="100" y2="370" stroke="#ccc" stroke-width="14" stroke-linecap="round"/>
-          <!-- forearm -->
-          <line x1="100" y1="370" x2="52" y2="430" stroke="#ccc" stroke-width="11" stroke-linecap="round"/>
-          <!-- hand/fingers -->
-          <line x1="52" y1="430" x2="28" y2="460" stroke="#ccc" stroke-width="8" stroke-linecap="round"/>
-          <line x1="52" y1="430" x2="38" y2="465" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
-          <line x1="52" y1="430" x2="50" y2="468" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
-          <line x1="52" y1="430" x2="62" y2="465" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
-          <line x1="52" y1="430" x2="72" y2="460" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
-          <!-- elbow knuckle -->
-          <circle cx="100" cy="370" r="7" fill="#bbb" stroke="#888" stroke-width="2"/>
-        </g>
-
-        <!-- RIGHT ARM (animates up/down, opposite phase) -->
-        <g id="arm-right">
-          <line x1="732" y1="310" x2="800" y2="370" stroke="#ccc" stroke-width="14" stroke-linecap="round"/>
-          <line x1="800" y1="370" x2="848" y2="430" stroke="#ccc" stroke-width="11" stroke-linecap="round"/>
-          <line x1="848" y1="430" x2="872" y2="460" stroke="#ccc" stroke-width="8" stroke-linecap="round"/>
-          <line x1="848" y1="430" x2="862" y2="465" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
-          <line x1="848" y1="430" x2="850" y2="468" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
-          <line x1="848" y1="430" x2="838" y2="465" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
-          <line x1="848" y1="430" x2="828" y2="460" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
-          <circle cx="800" cy="370" r="7" fill="#bbb" stroke="#888" stroke-width="2"/>
-        </g>
-
-        <!-- TORSO / RIBCAGE (static, behind canvas) -->
-        <g opacity="0.85">
-          <!-- spine -->
-          <line x1="450" y1="280" x2="450" y2="530" stroke="#aaa" stroke-width="8" stroke-linecap="round"/>
-          <!-- ribs left -->
-          <path d="M450,310 Q390,320 370,340" stroke="#aaa" stroke-width="5" fill="none" stroke-linecap="round"/>
-          <path d="M450,335 Q385,345 365,365" stroke="#aaa" stroke-width="5" fill="none" stroke-linecap="round"/>
-          <path d="M450,360 Q388,368 370,388" stroke="#aaa" stroke-width="5" fill="none" stroke-linecap="round"/>
-          <path d="M450,385 Q392,392 378,410" stroke="#aaa" stroke-width="4" fill="none" stroke-linecap="round"/>
-          <!-- ribs right -->
-          <path d="M450,310 Q510,320 530,340" stroke="#aaa" stroke-width="5" fill="none" stroke-linecap="round"/>
-          <path d="M450,335 Q515,345 535,365" stroke="#aaa" stroke-width="5" fill="none" stroke-linecap="round"/>
-          <path d="M450,360 Q512,368 530,388" stroke="#aaa" stroke-width="5" fill="none" stroke-linecap="round"/>
-          <path d="M450,385 Q508,392 522,410" stroke="#aaa" stroke-width="4" fill="none" stroke-linecap="round"/>
-          <!-- sternum -->
-          <line x1="450" y1="305" x2="450" y2="415" stroke="#bbb" stroke-width="10" stroke-linecap="round"/>
-          <!-- collarbone left -->
-          <line x1="450" y1="285" x2="360" y2="300" stroke="#bbb" stroke-width="7" stroke-linecap="round"/>
-          <!-- collarbone right -->
-          <line x1="450" y1="285" x2="540" y2="300" stroke="#bbb" stroke-width="7" stroke-linecap="round"/>
-          <!-- pelvis -->
-          <path d="M410,510 Q450,490 490,510 Q510,530 490,548 Q450,555 410,548 Q390,530 410,510Z" stroke="#aaa" stroke-width="5" fill="none"/>
-          <!-- hip joints -->
-          <line x1="420" y1="530" x2="450" y2="570" stroke="#999" stroke-width="6" stroke-linecap="round"/>
-          <line x1="480" y1="530" x2="450" y2="570" stroke="#999" stroke-width="6" stroke-linecap="round"/>
-        </g>
-
-        <!-- HEAD (animated separately via JS) -->
+        <!-- ═══ HEAD GROUP (animated) ═══ -->
         <g id="skull">
-          <!-- skull dome -->
-          <ellipse cx="450" cy="145" rx="68" ry="72" stroke="#ddd" stroke-width="5" fill="none"/>
-          <!-- cheekbones -->
-          <path d="M385,175 Q370,190 378,210 Q390,225 410,220" stroke="#ccc" stroke-width="4" fill="none"/>
-          <path d="M515,175 Q530,190 522,210 Q510,225 490,220" stroke="#ccc" stroke-width="4" fill="none"/>
-          <!-- jaw -->
-          <path d="M410,220 Q450,240 490,220" stroke="#ccc" stroke-width="5" fill="none" stroke-linecap="round"/>
-          <!-- eye sockets -->
-          <ellipse cx="428" cy="148" rx="18" ry="14" stroke="#bbb" stroke-width="3" fill="black" fill-opacity="0.7"/>
-          <ellipse cx="472" cy="148" rx="18" ry="14" stroke="#bbb" stroke-width="3" fill="black" fill-opacity="0.7"/>
-          <!-- nose cavity -->
-          <path d="M444,168 L450,182 L456,168" stroke="#bbb" stroke-width="3" fill="none"/>
-          <!-- teeth -->
-          <line x1="432" y1="220" x2="432" y2="232" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
-          <line x1="442" y1="222" x2="442" y2="234" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
-          <line x1="452" y1="222" x2="452" y2="234" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
-          <line x1="462" y1="222" x2="462" y2="234" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
-          <line x1="472" y1="220" x2="472" y2="232" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
-          <!-- neck -->
-          <line x1="435" y1="215" x2="430" y2="280" stroke="#bbb" stroke-width="9" stroke-linecap="round"/>
-          <line x1="465" y1="215" x2="470" y2="280" stroke="#bbb" stroke-width="9" stroke-linecap="round"/>
+          <!-- skull dome — big rounded shape like the reference -->
+          <path class="bone" stroke-width="3.5"
+            d="M520,30
+               C480,28 448,38 432,58
+               C414,80 412,108 418,130
+               C422,148 428,162 436,172
+               C440,178 440,186 438,192
+               C436,198 434,204 436,210
+               C440,218 452,222 464,224
+               C476,226 492,226 504,224
+               C516,222 526,218 530,210
+               C532,204 530,198 528,192
+               C526,186 526,178 530,172
+               C538,162 544,148 548,130
+               C554,108 552,80 534,58
+               C518,38 560,32 520,30Z"/>
+
+          <!-- left eye socket — organic irregular shape -->
+          <path class="bone" stroke-width="2.5"
+            d="M452,100 C446,96 440,98 438,104 C436,112 440,120 448,122 C456,124 464,120 466,112 C468,104 460,96 452,100Z"/>
+
+          <!-- right eye socket -->
+          <path class="bone" stroke-width="2.5"
+            d="M492,100 C486,96 480,98 480,104 C480,112 484,120 492,122 C500,124 508,120 508,112 C508,104 500,96 492,100Z"/>
+
+          <!-- nose cavity — subtle triangle -->
+          <path class="bone" stroke-width="2"
+            d="M514,138 L520,152 L526,138"/>
+
+          <!-- cheekbone left -->
+          <path class="bone" stroke-width="2.5"
+            d="M432,130 C424,138 420,150 422,162 C424,172 430,178 436,178"/>
+
+          <!-- cheekbone right -->
+          <path class="bone" stroke-width="2.5"
+            d="M608,130 C616,138 620,150 618,162 C616,172 610,178 604,178"/>
+
+          <!-- jaw line -->
+          <path class="bone" stroke-width="3"
+            d="M438,192 C440,204 448,214 460,218 C472,222 492,222 504,218 C516,214 522,204 522,192"/>
+
+          <!-- teeth row -->
+          <line class="bone" stroke-width="3" x1="456" y1="214" x2="456" y2="226"/>
+          <line class="bone" stroke-width="3" x1="464" y1="216" x2="464" y2="228"/>
+          <line class="bone" stroke-width="3" x1="472" y1="217" x2="472" y2="229"/>
+          <line class="bone" stroke-width="3" x1="480" y1="217" x2="480" y2="229"/>
+          <line class="bone" stroke-width="3" x1="488" y1="216" x2="488" y2="228"/>
+          <line class="bone" stroke-width="3" x1="496" y1="214" x2="496" y2="226"/>
+          <line class="bone" stroke-width="3" x1="504" y1="212" x2="504" y2="224"/>
+
+          <!-- neck vertebrae (circles stacked) -->
+          <circle class="bone" stroke-width="2.5" cx="520" cy="238" r="8"/>
+          <circle class="bone" stroke-width="2.5" cx="520" cy="254" r="8"/>
+          <circle class="bone" stroke-width="2.5" cx="520" cy="270" r="7"/>
+        </g>
+
+        <!-- ═══ TORSO (static) ═══ -->
+        <!-- shoulders / clavicles -->
+        <line class="bone" stroke-width="5" x1="440" y1="288" x2="310" y2="296"/>
+        <line class="bone" stroke-width="5" x1="600" y1="288" x2="730" y2="296"/>
+
+        <!-- shoulder knobs -->
+        <circle cx="310" cy="296" r="12" fill="none" stroke="#ddd" stroke-width="3"/>
+        <circle cx="730" cy="296" r="12" fill="none" stroke="#ddd" stroke-width="3"/>
+
+        <!-- spine (behind canvas, lower portion) -->
+        <line class="bone" stroke-width="5" x1="520" y1="278" x2="520" y2="440"/>
+
+        <!-- lower torso / pelvis hip arches visible below canvas -->
+        <path class="bone" stroke-width="3.5"
+          d="M460,500 C450,488 440,480 440,472 C440,464 448,460 460,462 C472,464 480,470 480,470"/>
+        <path class="bone" stroke-width="3.5"
+          d="M580,500 C590,488 600,480 600,472 C600,464 592,460 580,462 C568,464 560,470 560,470"/>
+
+        <!-- lower spine knobs below canvas -->
+        <circle class="bone" stroke-width="2.5" cx="520" cy="456" r="7"/>
+        <circle class="bone" stroke-width="2.5" cx="520" cy="472" r="7"/>
+        <circle class="bone" stroke-width="2.5" cx="520" cy="488" r="6"/>
+        <circle class="bone" stroke-width="2.5" cx="520" cy="503" r="6"/>
+
+        <!-- ═══ LEFT ARM GROUP (animated) ═══ -->
+        <g id="arm-left">
+          <!-- upper arm — thick, angled out left and slightly up from shoulder -->
+          <path class="bone" stroke-width="13"
+            d="M306,296 C280,292 240,280 200,268"/>
+          <!-- elbow joint -->
+          <circle cx="200" cy="268" r="14" fill="#111" stroke="#ddd" stroke-width="3"/>
+          <!-- forearm — angling downward toward left hand -->
+          <path class="bone" stroke-width="11"
+            d="M200,268 C175,292 148,318 122,348"/>
+          <!-- wrist knob -->
+          <circle cx="122" cy="348" r="10" fill="#111" stroke="#ddd" stroke-width="2.5"/>
+          <!-- HAND — 5 fingers splayed like reference -->
+          <!-- palm base -->
+          <path class="bone" stroke-width="8"
+            d="M122,348 C112,356 104,362 100,368"/>
+          <!-- finger 1 (pinky, top) -->
+          <path class="bone" stroke-width="4"
+            d="M100,368 C88,362 78,356 68,352"/>
+          <!-- finger 2 -->
+          <path class="bone" stroke-width="4"
+            d="M100,368 C90,372 80,374 70,376"/>
+          <!-- finger 3 (middle) -->
+          <path class="bone" stroke-width="4"
+            d="M100,368 C92,378 84,384 76,390"/>
+          <!-- finger 4 -->
+          <path class="bone" stroke-width="4"
+            d="M100,368 C96,382 94,392 92,402"/>
+          <!-- finger 5 (thumb-like) -->
+          <path class="bone" stroke-width="4"
+            d="M122,348 C118,360 116,372 116,384"/>
+          <!-- knuckle dots -->
+          <circle cx="68" cy="352" r="3" fill="#ddd"/>
+          <circle cx="70" cy="376" r="3" fill="#ddd"/>
+          <circle cx="76" cy="390" r="3" fill="#ddd"/>
+          <circle cx="92" cy="402" r="3" fill="#ddd"/>
+          <circle cx="116" cy="384" r="3" fill="#ddd"/>
+        </g>
+
+        <!-- ═══ RIGHT ARM GROUP (animated, mirrored) ═══ -->
+        <g id="arm-right">
+          <!-- upper arm -->
+          <path class="bone" stroke-width="13"
+            d="M734,296 C760,292 800,280 840,268"/>
+          <!-- elbow joint -->
+          <circle cx="840" cy="268" r="14" fill="#111" stroke="#ddd" stroke-width="3"/>
+          <!-- forearm -->
+          <path class="bone" stroke-width="11"
+            d="M840,268 C865,292 892,318 918,348"/>
+          <!-- wrist knob -->
+          <circle cx="918" cy="348" r="10" fill="#111" stroke="#ddd" stroke-width="2.5"/>
+          <!-- HAND -->
+          <path class="bone" stroke-width="8"
+            d="M918,348 C928,356 936,362 940,368"/>
+          <!-- finger 1 -->
+          <path class="bone" stroke-width="4"
+            d="M940,368 C952,362 962,356 972,352"/>
+          <!-- finger 2 -->
+          <path class="bone" stroke-width="4"
+            d="M940,368 C950,372 960,374 970,376"/>
+          <!-- finger 3 -->
+          <path class="bone" stroke-width="4"
+            d="M940,368 C948,378 956,384 964,390"/>
+          <!-- finger 4 -->
+          <path class="bone" stroke-width="4"
+            d="M940,368 C944,382 946,392 948,402"/>
+          <!-- finger 5 -->
+          <path class="bone" stroke-width="4"
+            d="M918,348 C922,360 924,372 924,384"/>
+          <!-- knuckle dots -->
+          <circle cx="972" cy="352" r="3" fill="#ddd"/>
+          <circle cx="970" cy="376" r="3" fill="#ddd"/>
+          <circle cx="964" cy="390" r="3" fill="#ddd"/>
+          <circle cx="948" cy="402" r="3" fill="#ddd"/>
+          <circle cx="924" cy="384" r="3" fill="#ddd"/>
         </g>
 
       </svg>
 
-      <canvas width="560" height="340"></canvas>
+      <canvas width="580" height="360"></canvas>
     </div>
 
     <script>
       // ── Skeleton animation ──────────────────────────────────────────
-      const skull = document.getElementById("skull");
-      const armLeft = document.getElementById("arm-left");
-      const armRight = document.getElementById("arm-right");
+      const skull   = document.getElementById("skull");
+      const armL    = document.getElementById("arm-left");
+      const armR    = document.getElementById("arm-right");
       let t = 0;
 
       function animateSkeleton() {
-        t += 0.018;
-        // Head: slow circular drift around its natural position
-        const hx = Math.sin(t) * 6;
-        const hy = Math.cos(t) * 5;
-        skull.setAttribute("transform", `translate(${hx}, ${hy})`);
+        t += 0.016;
 
-        // Arms: gentle up/down, opposite phases
-        const armAmp = 12;
-        const leftY  =  Math.sin(t * 1.1) * armAmp;
-        const rightY = -Math.sin(t * 1.1) * armAmp;
-        armLeft.setAttribute("transform",  `translate(0, ${leftY})`);
-        armRight.setAttribute("transform", `translate(0, ${rightY})`);
+        // Head: slow circular orbit
+        const hx = Math.sin(t * 0.7) * 7;
+        const hy = Math.cos(t * 0.7) * 5;
+        skull.setAttribute("transform", `translate(${hx},${hy})`);
+
+        // Arms: gentle bob, opposite phase
+        const amp = 14;
+        const lY =  Math.sin(t * 0.9) * amp;
+        const rY = -Math.sin(t * 0.9) * amp;
+        armL.setAttribute("transform", `translate(0,${lY})`);
+        armR.setAttribute("transform", `translate(0,${rY})`);
 
         requestAnimationFrame(animateSkeleton);
       }
@@ -155,13 +240,13 @@
 
       // ── Game ────────────────────────────────────────────────────────
       const canvas = document.querySelector("canvas");
-      const ctx = canvas.getContext("2d");
+      const ctx    = canvas.getContext("2d");
 
       let rightPressed = false, leftPressed = false;
-      let upPressed = false,    downPressed = false;
+      let upPressed    = false, downPressed = false;
 
       const playerSize = 50;
-      const startX = canvas.width / 2;
+      const startX = canvas.width  / 2;
       const startY = canvas.height - 55;
 
       let playerX = startX, playerY = startY;
@@ -170,16 +255,16 @@
       let squares = [];
 
       document.addEventListener("keydown", e => {
-        if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") rightPressed = true;
-        else if (e.key === "ArrowLeft"  || e.key === "a" || e.key === "A") leftPressed = true;
-        else if (e.key === "ArrowUp"    || e.key === "w" || e.key === "W") upPressed   = true;
-        else if (e.key === "ArrowDown"  || e.key === "s" || e.key === "S") downPressed = true;
+        if      (e.key==="ArrowRight"||e.key==="d"||e.key==="D") rightPressed = true;
+        else if (e.key==="ArrowLeft" ||e.key==="a"||e.key==="A") leftPressed  = true;
+        else if (e.key==="ArrowUp"   ||e.key==="w"||e.key==="W") upPressed    = true;
+        else if (e.key==="ArrowDown" ||e.key==="s"||e.key==="S") downPressed  = true;
       });
       document.addEventListener("keyup", e => {
-        if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") rightPressed = false;
-        else if (e.key === "ArrowLeft"  || e.key === "a" || e.key === "A") leftPressed = false;
-        else if (e.key === "ArrowUp"    || e.key === "w" || e.key === "W") upPressed   = false;
-        else if (e.key === "ArrowDown"  || e.key === "s" || e.key === "S") downPressed = false;
+        if      (e.key==="ArrowRight"||e.key==="d"||e.key==="D") rightPressed = false;
+        else if (e.key==="ArrowLeft" ||e.key==="a"||e.key==="A") leftPressed  = false;
+        else if (e.key==="ArrowUp"   ||e.key==="w"||e.key==="W") upPressed    = false;
+        else if (e.key==="ArrowDown" ||e.key==="s"||e.key==="S") downPressed  = false;
       });
 
       function spawnSquare() {
@@ -222,7 +307,6 @@
           ctx.fillStyle = "#4af";
           ctx.fill();
           ctx.closePath();
-
           if (!dead) {
             sq.x += sq.speedX;
             sq.y += sq.speedY;
