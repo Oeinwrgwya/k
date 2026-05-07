@@ -5,50 +5,182 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>echo</title>
     <style>
-      body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif; }
-      canvas { border: 2px solid #555; background: black; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        background: #0a0a0a;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: Arial, sans-serif;
+        overflow: hidden;
+      }
+      .scene {
+        position: relative;
+        width: 900px;
+        height: 600px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .skeleton-wrap {
+        position: absolute;
+        width: 900px;
+        height: 600px;
+        top: 0; left: 0;
+        pointer-events: none;
+        z-index: 0;
+      }
+      canvas {
+        border: 2px solid #555;
+        background: black;
+        position: relative;
+        z-index: 1;
+      }
     </style>
   </head>
   <body>
-    <canvas width="900" height="600"></canvas>
+    <div class="scene">
+      <svg class="skeleton-wrap" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+
+        <!-- LEFT ARM (animates up/down) -->
+        <g id="arm-left">
+          <!-- upper arm -->
+          <line x1="168" y1="310" x2="100" y2="370" stroke="#ccc" stroke-width="14" stroke-linecap="round"/>
+          <!-- forearm -->
+          <line x1="100" y1="370" x2="52" y2="430" stroke="#ccc" stroke-width="11" stroke-linecap="round"/>
+          <!-- hand/fingers -->
+          <line x1="52" y1="430" x2="28" y2="460" stroke="#ccc" stroke-width="8" stroke-linecap="round"/>
+          <line x1="52" y1="430" x2="38" y2="465" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
+          <line x1="52" y1="430" x2="50" y2="468" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
+          <line x1="52" y1="430" x2="62" y2="465" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
+          <line x1="52" y1="430" x2="72" y2="460" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
+          <!-- elbow knuckle -->
+          <circle cx="100" cy="370" r="7" fill="#bbb" stroke="#888" stroke-width="2"/>
+        </g>
+
+        <!-- RIGHT ARM (animates up/down, opposite phase) -->
+        <g id="arm-right">
+          <line x1="732" y1="310" x2="800" y2="370" stroke="#ccc" stroke-width="14" stroke-linecap="round"/>
+          <line x1="800" y1="370" x2="848" y2="430" stroke="#ccc" stroke-width="11" stroke-linecap="round"/>
+          <line x1="848" y1="430" x2="872" y2="460" stroke="#ccc" stroke-width="8" stroke-linecap="round"/>
+          <line x1="848" y1="430" x2="862" y2="465" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
+          <line x1="848" y1="430" x2="850" y2="468" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
+          <line x1="848" y1="430" x2="838" y2="465" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
+          <line x1="848" y1="430" x2="828" y2="460" stroke="#ccc" stroke-width="6" stroke-linecap="round"/>
+          <circle cx="800" cy="370" r="7" fill="#bbb" stroke="#888" stroke-width="2"/>
+        </g>
+
+        <!-- TORSO / RIBCAGE (static, behind canvas) -->
+        <g opacity="0.85">
+          <!-- spine -->
+          <line x1="450" y1="280" x2="450" y2="530" stroke="#aaa" stroke-width="8" stroke-linecap="round"/>
+          <!-- ribs left -->
+          <path d="M450,310 Q390,320 370,340" stroke="#aaa" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M450,335 Q385,345 365,365" stroke="#aaa" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M450,360 Q388,368 370,388" stroke="#aaa" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M450,385 Q392,392 378,410" stroke="#aaa" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <!-- ribs right -->
+          <path d="M450,310 Q510,320 530,340" stroke="#aaa" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M450,335 Q515,345 535,365" stroke="#aaa" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M450,360 Q512,368 530,388" stroke="#aaa" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M450,385 Q508,392 522,410" stroke="#aaa" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <!-- sternum -->
+          <line x1="450" y1="305" x2="450" y2="415" stroke="#bbb" stroke-width="10" stroke-linecap="round"/>
+          <!-- collarbone left -->
+          <line x1="450" y1="285" x2="360" y2="300" stroke="#bbb" stroke-width="7" stroke-linecap="round"/>
+          <!-- collarbone right -->
+          <line x1="450" y1="285" x2="540" y2="300" stroke="#bbb" stroke-width="7" stroke-linecap="round"/>
+          <!-- pelvis -->
+          <path d="M410,510 Q450,490 490,510 Q510,530 490,548 Q450,555 410,548 Q390,530 410,510Z" stroke="#aaa" stroke-width="5" fill="none"/>
+          <!-- hip joints -->
+          <line x1="420" y1="530" x2="450" y2="570" stroke="#999" stroke-width="6" stroke-linecap="round"/>
+          <line x1="480" y1="530" x2="450" y2="570" stroke="#999" stroke-width="6" stroke-linecap="round"/>
+        </g>
+
+        <!-- HEAD (animated separately via JS) -->
+        <g id="skull">
+          <!-- skull dome -->
+          <ellipse cx="450" cy="145" rx="68" ry="72" stroke="#ddd" stroke-width="5" fill="none"/>
+          <!-- cheekbones -->
+          <path d="M385,175 Q370,190 378,210 Q390,225 410,220" stroke="#ccc" stroke-width="4" fill="none"/>
+          <path d="M515,175 Q530,190 522,210 Q510,225 490,220" stroke="#ccc" stroke-width="4" fill="none"/>
+          <!-- jaw -->
+          <path d="M410,220 Q450,240 490,220" stroke="#ccc" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <!-- eye sockets -->
+          <ellipse cx="428" cy="148" rx="18" ry="14" stroke="#bbb" stroke-width="3" fill="black" fill-opacity="0.7"/>
+          <ellipse cx="472" cy="148" rx="18" ry="14" stroke="#bbb" stroke-width="3" fill="black" fill-opacity="0.7"/>
+          <!-- nose cavity -->
+          <path d="M444,168 L450,182 L456,168" stroke="#bbb" stroke-width="3" fill="none"/>
+          <!-- teeth -->
+          <line x1="432" y1="220" x2="432" y2="232" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
+          <line x1="442" y1="222" x2="442" y2="234" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
+          <line x1="452" y1="222" x2="452" y2="234" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
+          <line x1="462" y1="222" x2="462" y2="234" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
+          <line x1="472" y1="220" x2="472" y2="232" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
+          <!-- neck -->
+          <line x1="435" y1="215" x2="430" y2="280" stroke="#bbb" stroke-width="9" stroke-linecap="round"/>
+          <line x1="465" y1="215" x2="470" y2="280" stroke="#bbb" stroke-width="9" stroke-linecap="round"/>
+        </g>
+
+      </svg>
+
+      <canvas width="560" height="340"></canvas>
+    </div>
+
     <script>
+      // ── Skeleton animation ──────────────────────────────────────────
+      const skull = document.getElementById("skull");
+      const armLeft = document.getElementById("arm-left");
+      const armRight = document.getElementById("arm-right");
+      let t = 0;
+
+      function animateSkeleton() {
+        t += 0.018;
+        // Head: slow circular drift around its natural position
+        const hx = Math.sin(t) * 6;
+        const hy = Math.cos(t) * 5;
+        skull.setAttribute("transform", `translate(${hx}, ${hy})`);
+
+        // Arms: gentle up/down, opposite phases
+        const armAmp = 12;
+        const leftY  =  Math.sin(t * 1.1) * armAmp;
+        const rightY = -Math.sin(t * 1.1) * armAmp;
+        armLeft.setAttribute("transform",  `translate(0, ${leftY})`);
+        armRight.setAttribute("transform", `translate(0, ${rightY})`);
+
+        requestAnimationFrame(animateSkeleton);
+      }
+      animateSkeleton();
+
+      // ── Game ────────────────────────────────────────────────────────
       const canvas = document.querySelector("canvas");
       const ctx = canvas.getContext("2d");
 
-      let rightPressed = false;
-      let leftPressed = false;
-      let upPressed = false;
-      let downPressed = false;
+      let rightPressed = false, leftPressed = false;
+      let upPressed = false,    downPressed = false;
 
       const playerSize = 50;
       const startX = canvas.width / 2;
       const startY = canvas.height - 55;
 
-      let playerX = startX;
-      let playerY = startY;
-      let score = 0;
-      let dead = false;
-      let shakeFrames = 0;
+      let playerX = startX, playerY = startY;
+      let score = 0, dead = false, shakeFrames = 0;
       const SHAKE_DURATION = 30;
-
       let squares = [];
 
-      document.addEventListener("keydown", keyDownHandler, false);
-      document.addEventListener("keyup", keyUpHandler, false);
-
-      function keyDownHandler(e) {
-        if (e.key === "Right" || e.key === "ArrowRight" || e.key === "d" || e.key === "D") rightPressed = true;
-        else if (e.key === "Left" || e.key === "ArrowLeft" || e.key === "a" || e.key === "A") leftPressed = true;
-        else if (e.key === "Up" || e.key === "ArrowUp" || e.key === "w" || e.key === "W") upPressed = true;
-        else if (e.key === "Down" || e.key === "ArrowDown" || e.key === "s" || e.key === "S") downPressed = true;
-      }
-
-      function keyUpHandler(e) {
-        if (e.key === "Right" || e.key === "ArrowRight" || e.key === "d" || e.key === "D") rightPressed = false;
-        else if (e.key === "Left" || e.key === "ArrowLeft" || e.key === "a" || e.key === "A") leftPressed = false;
-        else if (e.key === "Up" || e.key === "ArrowUp" || e.key === "w" || e.key === "W") upPressed = false;
-        else if (e.key === "Down" || e.key === "ArrowDown" || e.key === "s" || e.key === "S") downPressed = false;
-      }
+      document.addEventListener("keydown", e => {
+        if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") rightPressed = true;
+        else if (e.key === "ArrowLeft"  || e.key === "a" || e.key === "A") leftPressed = true;
+        else if (e.key === "ArrowUp"    || e.key === "w" || e.key === "W") upPressed   = true;
+        else if (e.key === "ArrowDown"  || e.key === "s" || e.key === "S") downPressed = true;
+      });
+      document.addEventListener("keyup", e => {
+        if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") rightPressed = false;
+        else if (e.key === "ArrowLeft"  || e.key === "a" || e.key === "A") leftPressed = false;
+        else if (e.key === "ArrowUp"    || e.key === "w" || e.key === "W") upPressed   = false;
+        else if (e.key === "ArrowDown"  || e.key === "s" || e.key === "S") downPressed = false;
+      });
 
       function spawnSquare() {
         return {
@@ -62,20 +194,14 @@
 
       function initSquares() {
         squares = [];
-        for (let i = 0; i < 5; i++) {
-          squares.push(spawnSquare());
-        }
+        for (let i = 0; i < 5; i++) squares.push(spawnSquare());
       }
 
       function resetAll() {
-        playerX = startX;
-        playerY = startY;
-        dead = false;
-        shakeFrames = 0;
-        rightPressed = false;
-        leftPressed = false;
-        upPressed = false;
-        downPressed = false;
+        playerX = startX; playerY = startY;
+        dead = false; shakeFrames = 0;
+        rightPressed = false; leftPressed = false;
+        upPressed = false; downPressed = false;
         initSquares();
       }
 
@@ -90,35 +216,25 @@
       }
 
       function drawSquares() {
-        squares.forEach((square) => {
+        squares.forEach(sq => {
           ctx.beginPath();
-          ctx.rect(square.x, square.y, square.size, square.size);
+          ctx.rect(sq.x, sq.y, sq.size, sq.size);
           ctx.fillStyle = "#4af";
           ctx.fill();
           ctx.closePath();
 
           if (!dead) {
-            square.x += square.speedX;
-            square.y += square.speedY;
-
-            if (square.x < 0 || square.x + square.size > canvas.width) {
-              square.speedX *= -1;
-              square.x = Math.max(0, Math.min(square.x, canvas.width - square.size));
+            sq.x += sq.speedX;
+            sq.y += sq.speedY;
+            if (sq.x < 0 || sq.x + sq.size > canvas.width) {
+              sq.speedX *= -1;
+              sq.x = Math.max(0, Math.min(sq.x, canvas.width - sq.size));
             }
-
-            if (square.y > canvas.height) {
-              Object.assign(square, spawnSquare());
-            }
-
+            if (sq.y > canvas.height) Object.assign(sq, spawnSquare());
             if (
-              playerX < square.x + square.size &&
-              playerX + playerSize > square.x &&
-              playerY < square.y + square.size &&
-              playerY + playerSize > square.y
-            ) {
-              dead = true;
-              shakeFrames = SHAKE_DURATION;
-            }
+              playerX < sq.x + sq.size && playerX + playerSize > sq.x &&
+              playerY < sq.y + sq.size && playerY + playerSize > sq.y
+            ) { dead = true; shakeFrames = SHAKE_DURATION; }
           }
         });
       }
@@ -126,22 +242,17 @@
       function drawScore() {
         ctx.font = "20px Arial";
         ctx.fillStyle = "white";
-        ctx.fillText("Wynik: " + score, 20, 30);
+        ctx.fillText("Wynik: " + score, 10, 25);
       }
 
       function draw() {
-        let shakeX = 0;
-        let shakeY = 0;
-
+        let shakeX = 0, shakeY = 0;
         if (shakeFrames > 0) {
           shakeFrames--;
           const intensity = Math.floor((shakeFrames / SHAKE_DURATION) * 18);
           shakeX = (Math.random() - 0.5) * 2 * intensity;
           shakeY = (Math.random() - 0.5) * 2 * intensity;
-
-          if (shakeFrames === 0) {
-            resetAll();
-          }
+          if (shakeFrames === 0) resetAll();
         }
 
         ctx.save();
@@ -149,7 +260,7 @@
         ctx.clearRect(-20, -20, canvas.width + 40, canvas.height + 40);
 
         if (dead) {
-          ctx.fillStyle = `rgba(255, 0, 0, ${0.15 * (shakeFrames / SHAKE_DURATION)})`;
+          ctx.fillStyle = `rgba(255,0,0,${0.15 * (shakeFrames / SHAKE_DURATION)})`;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
@@ -159,7 +270,7 @@
         ctx.closePath();
 
         if (!dead) {
-          if (rightPressed) playerX = Math.min(playerX + 5, canvas.width - playerSize);
+          if (rightPressed) playerX = Math.min(playerX + 5, canvas.width  - playerSize);
           if (leftPressed)  playerX = Math.max(playerX - 5, 0);
           if (upPressed)    playerY = Math.max(playerY - 5, 0);
           if (downPressed)  playerY = Math.min(playerY + 5, canvas.height - playerSize);
@@ -168,7 +279,6 @@
         drawPlayer();
         drawSquares();
         drawScore();
-
         ctx.restore();
         requestAnimationFrame(draw);
       }
