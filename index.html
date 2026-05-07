@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Unikaj Kulek - Gra 2D w HTML5</title>
     <style>
-      body { margin: 0; background: #f0f0f0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif; }
-      canvas { border: 2px solid #333; background: white; }
+      body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif; }
+      canvas { border: 2px solid #555; background: black; }
     </style>
   </head>
   <body>
@@ -14,73 +14,82 @@
     <script>
       const canvas = document.querySelector("canvas");
       const ctx = canvas.getContext("2d");
-
       let rightPressed = false;
       let leftPressed = false;
+      let upPressed = false;
+      let downPressed = false;
       let playerX = canvas.width / 2;
+      let playerY = canvas.height - 55;
       const playerSize = 50;
       const squares = [];
       let score = 0;
 
-      // Sterowanie klawiaturą
       document.addEventListener("keydown", keyDownHandler, false);
       document.addEventListener("keyup", keyUpHandler, false);
 
       function keyDownHandler(e) {
-        if (e.key === "Right" || e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
-          rightPressed = true;
-        } else if (e.key === "Left" || e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
-          leftPressed = true;
-        }
+        if (e.key === "Right" || e.key === "ArrowRight" || e.key === "d" || e.key === "D") rightPressed = true;
+        else if (e.key === "Left" || e.key === "ArrowLeft" || e.key === "a" || e.key === "A") leftPressed = true;
+        else if (e.key === "Up" || e.key === "ArrowUp" || e.key === "w" || e.key === "W") upPressed = true;
+        else if (e.key === "Down" || e.key === "ArrowDown" || e.key === "s" || e.key === "S") downPressed = true;
       }
 
       function keyUpHandler(e) {
-        if (e.key === "Right" || e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
-          rightPressed = false;
-        } else if (e.key === "Left" || e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
-          leftPressed = false;
-        }
+        if (e.key === "Right" || e.key === "ArrowRight" || e.key === "d" || e.key === "D") rightPressed = false;
+        else if (e.key === "Left" || e.key === "ArrowLeft" || e.key === "a" || e.key === "A") leftPressed = false;
+        else if (e.key === "Up" || e.key === "ArrowUp" || e.key === "w" || e.key === "W") upPressed = false;
+        else if (e.key === "Down" || e.key === "ArrowDown" || e.key === "s" || e.key === "S") downPressed = false;
       }
 
-      // Inicjalizacja spadających kwadratów (kulek)
       for (let i = 0; i < 5; i++) {
         squares.push({
           x: Math.random() * (canvas.width - playerSize),
           y: Math.random() * -canvas.height,
           size: playerSize,
+          speedX: (Math.random() * 2 + 1) * (Math.random() < 0.5 ? 1 : -1),
+          speedY: Math.random() * 2 + 1,
         });
       }
 
-      // Rysuj gracza (czerwony kwadrat)
       function drawPlayer() {
         ctx.beginPath();
-        ctx.rect(playerX, canvas.height - playerSize - 5, playerSize, playerSize);
+        ctx.rect(playerX, playerY, playerSize, playerSize);
         ctx.fillStyle = "red";
         ctx.fill();
         ctx.closePath();
       }
 
-      // Rysuj i poruszaj kwadratami, sprawdzaj kolizje
       function drawSquares() {
         squares.forEach((square) => {
           ctx.beginPath();
           ctx.rect(square.x, square.y, square.size, square.size);
-          ctx.fillStyle = "blue";
+          ctx.fillStyle = "#4af";
           ctx.fill();
           ctx.closePath();
 
-          // Spadaj w dół
-          square.y += 3;
+          square.x += square.speedX;
+          square.y += square.speedY;
+
+          // Odbicie od bocznych ścian
+          if (square.x < 0 || square.x + square.size > canvas.width) {
+            square.speedX *= -1;
+            square.x = Math.max(0, Math.min(square.x, canvas.width - square.size));
+          }
+
+          // Reset po wyjściu za dolną krawędź
           if (square.y > canvas.height) {
-            square.y = 0 - square.size;
+            square.y = -square.size;
             square.x = Math.random() * (canvas.width - playerSize);
+            square.speedX = (Math.random() * 2 + 1) * (Math.random() < 0.5 ? 1 : -1);
+            square.speedY = Math.random() * 2 + 1;
           }
 
           // Kolizja
           if (
             playerX < square.x + square.size &&
             playerX + playerSize > square.x &&
-            canvas.height - playerSize - 5 < square.y + square.size
+            playerY < square.y + square.size &&
+            playerY + playerSize > square.y
           ) {
             alert("Game Over! Twój wynik: " + score);
             document.location.reload();
@@ -88,43 +97,35 @@
         });
       }
 
-      // Wynik
       function drawScore() {
         ctx.font = "20px Arial";
-        ctx.fillStyle = "black";
+        ctx.fillStyle = "white";
         ctx.fillText("Wynik: " + score, 20, 30);
       }
 
-      // Pętla gry (60 FPS)
       function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Ramka
         ctx.beginPath();
+        ctx.strokeStyle = "#555";
         ctx.strokeRect(0, 0, canvas.width, canvas.height);
         ctx.closePath();
+
+        // Ruch gracza (lewo/prawo/góra/dół)
+        if (rightPressed) playerX = Math.min(playerX + 5, canvas.width - playerSize);
+        if (leftPressed)  playerX = Math.max(playerX - 5, 0);
+        if (upPressed)    playerY = Math.max(playerY - 5, 0);
+        if (downPressed)  playerY = Math.min(playerY + 5, canvas.height - playerSize);
 
         drawPlayer();
         drawSquares();
         drawScore();
 
-        // Ruch gracza
-        if (rightPressed) {
-          playerX = Math.min(playerX + 7, canvas.width - playerSize);
-        } else if (leftPressed) {
-          playerX = Math.max(playerX - 7, 0);
-        }
-
         requestAnimationFrame(draw);
       }
 
-      // Start gry
       draw();
-
-      // Zwiększaj wynik co sekundę
-      setInterval(() => {
-        score++;
-      }, 1000);
+      setInterval(() => { score++; }, 1000);
     </script>
   </body>
 </html>
