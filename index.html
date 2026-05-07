@@ -32,7 +32,6 @@
       const SHAKE_DURATION = 30;
 
       let squares = [];
-      let savedSquares = [];
 
       document.addEventListener("keydown", keyDownHandler, false);
       document.addEventListener("keyup", keyUpHandler, false);
@@ -61,15 +60,12 @@
         };
       }
 
-      function deepCopySquares(src) {
-        return src.map(s => ({ ...s }));
+      function initSquares() {
+        squares = [];
+        for (let i = 0; i < 5; i++) {
+          squares.push(spawnSquare());
+        }
       }
-
-      for (let i = 0; i < 5; i++) {
-        squares.push(spawnSquare());
-      }
-      // Zapisz pozycje startowe kwadratów
-      savedSquares = deepCopySquares(squares);
 
       function resetAll() {
         playerX = startX;
@@ -80,9 +76,10 @@
         leftPressed = false;
         upPressed = false;
         downPressed = false;
-        // Przywróć pozycje kwadratów sprzed kolizji
-        squares = deepCopySquares(savedSquares);
+        initSquares();
       }
+
+      initSquares();
 
       function drawPlayer() {
         ctx.beginPath();
@@ -119,8 +116,6 @@
               playerY < square.y + square.size &&
               playerY + playerSize > square.y
             ) {
-              // Zapisz stan tuż przed kolizją i rozpocznij śmierć
-              savedSquares = deepCopySquares(squares);
               dead = true;
               shakeFrames = SHAKE_DURATION;
             }
