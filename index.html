@@ -14,15 +14,24 @@
     <script>
       const canvas = document.querySelector("canvas");
       const ctx = canvas.getContext("2d");
+
       let rightPressed = false;
       let leftPressed = false;
       let upPressed = false;
       let downPressed = false;
-      let playerX = canvas.width / 2;
-      let playerY = canvas.height - 55;
+
       const playerSize = 50;
-      const squares = [];
+      const startX = canvas.width / 2;
+      const startY = canvas.height - 55;
+
+      let playerX = startX;
+      let playerY = startY;
       let score = 0;
+      let dead = false;
+      let shakeFrames = 0;
+      const SHAKE_DURATION = 30;
+
+      const squares = [];
 
       document.addEventListener("keydown", keyDownHandler, false);
       document.addEventListener("keyup", keyUpHandler, false);
@@ -41,20 +50,35 @@
         else if (e.key === "Down" || e.key === "ArrowDown" || e.key === "s" || e.key === "S") downPressed = false;
       }
 
-      for (let i = 0; i < 5; i++) {
-        squares.push({
+      function spawnSquare(i) {
+        return {
           x: Math.random() * (canvas.width - playerSize),
-          y: Math.random() * -canvas.height,
+          y: -playerSize - Math.random() * canvas.height,
           size: playerSize,
           speedX: (Math.random() * 2 + 1) * (Math.random() < 0.5 ? 1 : -1),
           speedY: Math.random() * 2 + 1,
-        });
+        };
       }
 
-      function drawPlayer() {
+      for (let i = 0; i < 5; i++) {
+        squares.push(spawnSquare(i));
+      }
+
+      function resetPlayer() {
+        playerX = startX;
+        playerY = startY;
+        dead = false;
+        shakeFrames = 0;
+        rightPressed = false;
+        leftPressed = false;
+        upPressed = false;
+        downPressed = false;
+      }
+
+      function drawPlayer(offsetX, offsetY) {
         ctx.beginPath();
-        ctx.rect(playerX, playerY, playerSize, playerSize);
-        ctx.fillStyle = "red";
+        ctx.rect(playerX + offsetX, playerY + offsetY, playerSize, playerSize);
+        ctx.fillStyle = dead ? "#ff4444" : "red";
         ctx.fill();
         ctx.closePath();
       }
@@ -67,32 +91,30 @@
           ctx.fill();
           ctx.closePath();
 
-          square.x += square.speedX;
-          square.y += square.speedY;
+          if (!dead) {
+            square.x += square.speedX;
+            square.y += square.speedY;
 
-          // Odbicie od bocznych ścian
-          if (square.x < 0 || square.x + square.size > canvas.width) {
-            square.speedX *= -1;
-            square.x = Math.max(0, Math.min(square.x, canvas.width - square.size));
-          }
+            if (square.x < 0 || square.x + square.size > canvas.width) {
+              square.speedX *= -1;
+              square.x = Math.max(0, Math.min(square.x, canvas.width - square.size));
+            }
 
-          // Reset po wyjściu za dolną krawędź
-          if (square.y > canvas.height) {
-            square.y = -square.size;
-            square.x = Math.random() * (canvas.width - playerSize);
-            square.speedX = (Math.random() * 2 + 1) * (Math.random() < 0.5 ? 1 : -1);
-            square.speedY = Math.random() * 2 + 1;
-          }
+            if (square.y > canvas.height) {
+              Object.assign(square, spawnSquare());
+            }
 
-          // Kolizja
-          if (
-            playerX < square.x + square.size &&
-            playerX + playerSize > square.x &&
-            playerY < square.y + square.size &&
-            playerY + playerSize > square.y
-          ) {
-            alert("Game Over! Twój wynik: " + score);
-            document.location.reload();
+            // Kolizja
+            if (
+              !dead &&
+              playerX < square.x + square.size &&
+              playerX + playerSize > square.x &&
+              playerY < square.y + square.size &&
+              playerY + playerSize > square.y
+            ) {
+              dead = true;
+              shakeFrames = SHAKE_DURATION;
+            }
           }
         });
       }
@@ -104,28 +126,54 @@
       }
 
       function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let shakeX = 0;
+        let shakeY = 0;
+
+        if (shakeFrames > 0) {
+          shakeFrames--;
+          const intensity = Math.floor((shakeFrames / SHAKE_DURATION) * 18);
+          shakeX = (Math.random() - 0.5) * 2 * intensity;
+          shakeY = (Math.random() - 0.5) * 2 * intensity;
+
+          if (shakeFrames === 0) {
+            resetPlayer();
+          }
+        }
+
+        ctx.save();
+        ctx.translate(shakeX, shakeY);
+
+        ctx.clearRect(-20, -20, canvas.width + 40, canvas.height + 40);
+
+        // Czerwone tło przy śmierci
+        if (dead) {
+          ctx.fillStyle = `rgba(255, 0, 0, ${0.15 * (shakeFrames / SHAKE_DURATION)})`;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
 
         ctx.beginPath();
         ctx.strokeStyle = "#555";
         ctx.strokeRect(0, 0, canvas.width, canvas.height);
         ctx.closePath();
 
-        // Ruch gracza (lewo/prawo/góra/dół)
-        if (rightPressed) playerX = Math.min(playerX + 5, canvas.width - playerSize);
-        if (leftPressed)  playerX = Math.max(playerX - 5, 0);
-        if (upPressed)    playerY = Math.max(playerY - 5, 0);
-        if (downPressed)  playerY = Math.min(playerY + 5, canvas.height - playerSize);
+        if (!dead) {
+          if (rightPressed) playerX = Math.min(playerX + 5, canvas.width - playerSize);
+          if (leftPressed)  playerX = Math.max(playerX - 5, 0);
+          if (upPressed)    playerY = Math.max(playerY - 5, 0);
+          if (downPressed)  playerY = Math.min(playerY + 5, canvas.height - playerSize);
+        }
 
-        drawPlayer();
+        drawPlayer(0, 0);
         drawSquares();
         drawScore();
+
+        ctx.restore();
 
         requestAnimationFrame(draw);
       }
 
       draw();
-      setInterval(() => { score++; }, 1000);
+      setInterval(() => { if (!dead) score++; }, 1000);
     </script>
   </body>
 </html>
