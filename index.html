@@ -1,374 +1,946 @@
 <!DOCTYPE html>
 <html lang="pl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>echo</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body {
-        background: #0a0a0a;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        font-family: Arial, sans-serif;
-        overflow: hidden;
-      }
-      .scene {
-        position: relative;
-        width: 1040px;
-        height: 600px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-      svg.skeleton-wrap {
-        position: absolute;
-        width: 1040px;
-        height: 600px;
-        top: 0; left: 0;
-        pointer-events: none;
-        z-index: 0;
-      }
-      canvas {
-        border: 3px solid #333;
-        background: black;
-        position: relative;
-        z-index: 1;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="scene">
-      <svg class="skeleton-wrap" viewBox="0 0 1040 600" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <style>
-            .bone { fill: none; stroke: #ddd; stroke-linecap: round; stroke-linejoin: round; }
-          </style>
-        </defs>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dungeon Explorer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0f;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Courier New', monospace;
+    color: #e0d8c0;
+  }
+  #gameTitle {
+    font-size: 22px;
+    letter-spacing: 6px;
+    color: #c8a84b;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    text-shadow: 0 0 12px #c8a84b66;
+  }
+  #wrapper {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    border: 2px solid #3a3020;
+    box-shadow: 0 0 30px #00000088, inset 0 0 40px #00000044;
+  }
+  #sidebar {
+    width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .panel {
+    background: #12100a;
+    border: 1px solid #3a3020;
+    padding: 12px;
+    border-radius: 2px;
+  }
+  .panel h3 {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: #c8a84b;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #3a3020;
+    padding-bottom: 4px;
+  }
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin: 4px 0;
+    color: #b0a888;
+  }
+  .stat-val { color: #e0d8c0; font-weight: bold; }
+  .bar-wrap { background: #1a1810; height: 8px; border-radius: 1px; margin: 3px 0 6px; }
+  .bar { height: 8px; border-radius: 1px; transition: width 0.3s; }
+  .bar-hp { background: linear-gradient(90deg, #7a1a1a, #c0392b); }
+  .bar-mp { background: linear-gradient(90deg, #1a2a7a, #2980b9); }
+  #inventoryList {
+    font-size: 11px;
+    color: #b0a888;
+    line-height: 1.8;
+  }
+  #inventoryList .item { color: #c8a84b; }
+  #controls {
+    font-size: 10px;
+    color: #6a6050;
+    line-height: 2;
+    letter-spacing: 1px;
+  }
+  #msgLog {
+    font-size: 10px;
+    color: #8a8070;
+    line-height: 1.7;
+    max-height: 80px;
+    overflow: hidden;
+  }
+  #msgLog .msg-new { color: #c8b87a; }
+</style>
+</head>
+<body>
 
-        <!-- ═══ HEAD GROUP (animated) ═══ -->
-        <g id="skull">
-          <!-- skull dome — big rounded shape like the reference -->
-          <path class="bone" stroke-width="3.5"
-            d="M520,30
-               C480,28 448,38 432,58
-               C414,80 412,108 418,130
-               C422,148 428,162 436,172
-               C440,178 440,186 438,192
-               C436,198 434,204 436,210
-               C440,218 452,222 464,224
-               C476,226 492,226 504,224
-               C516,222 526,218 530,210
-               C532,204 530,198 528,192
-               C526,186 526,178 530,172
-               C538,162 544,148 548,130
-               C554,108 552,80 534,58
-               C518,38 560,32 520,30Z"/>
-
-          <!-- left eye socket — organic irregular shape -->
-          <path class="bone" stroke-width="2.5"
-            d="M452,100 C446,96 440,98 438,104 C436,112 440,120 448,122 C456,124 464,120 466,112 C468,104 460,96 452,100Z"/>
-
-          <!-- right eye socket -->
-          <path class="bone" stroke-width="2.5"
-            d="M492,100 C486,96 480,98 480,104 C480,112 484,120 492,122 C500,124 508,120 508,112 C508,104 500,96 492,100Z"/>
-
-          <!-- nose cavity — subtle triangle -->
-          <path class="bone" stroke-width="2"
-            d="M514,138 L520,152 L526,138"/>
-
-          <!-- cheekbone left -->
-          <path class="bone" stroke-width="2.5"
-            d="M432,130 C424,138 420,150 422,162 C424,172 430,178 436,178"/>
-
-          <!-- cheekbone right -->
-          <path class="bone" stroke-width="2.5"
-            d="M608,130 C616,138 620,150 618,162 C616,172 610,178 604,178"/>
-
-          <!-- jaw line -->
-          <path class="bone" stroke-width="3"
-            d="M438,192 C440,204 448,214 460,218 C472,222 492,222 504,218 C516,214 522,204 522,192"/>
-
-          <!-- teeth row -->
-          <line class="bone" stroke-width="3" x1="456" y1="214" x2="456" y2="226"/>
-          <line class="bone" stroke-width="3" x1="464" y1="216" x2="464" y2="228"/>
-          <line class="bone" stroke-width="3" x1="472" y1="217" x2="472" y2="229"/>
-          <line class="bone" stroke-width="3" x1="480" y1="217" x2="480" y2="229"/>
-          <line class="bone" stroke-width="3" x1="488" y1="216" x2="488" y2="228"/>
-          <line class="bone" stroke-width="3" x1="496" y1="214" x2="496" y2="226"/>
-          <line class="bone" stroke-width="3" x1="504" y1="212" x2="504" y2="224"/>
-
-          <!-- neck vertebrae (circles stacked) -->
-          <circle class="bone" stroke-width="2.5" cx="520" cy="238" r="8"/>
-          <circle class="bone" stroke-width="2.5" cx="520" cy="254" r="8"/>
-          <circle class="bone" stroke-width="2.5" cx="520" cy="270" r="7"/>
-        </g>
-
-        <!-- ═══ TORSO (static) ═══ -->
-        <!-- shoulders / clavicles -->
-        <line class="bone" stroke-width="5" x1="440" y1="288" x2="310" y2="296"/>
-        <line class="bone" stroke-width="5" x1="600" y1="288" x2="730" y2="296"/>
-
-        <!-- shoulder knobs -->
-        <circle cx="310" cy="296" r="12" fill="none" stroke="#ddd" stroke-width="3"/>
-        <circle cx="730" cy="296" r="12" fill="none" stroke="#ddd" stroke-width="3"/>
-
-        <!-- spine (behind canvas, lower portion) -->
-        <line class="bone" stroke-width="5" x1="520" y1="278" x2="520" y2="440"/>
-
-        <!-- lower torso / pelvis hip arches visible below canvas -->
-        <path class="bone" stroke-width="3.5"
-          d="M460,500 C450,488 440,480 440,472 C440,464 448,460 460,462 C472,464 480,470 480,470"/>
-        <path class="bone" stroke-width="3.5"
-          d="M580,500 C590,488 600,480 600,472 C600,464 592,460 580,462 C568,464 560,470 560,470"/>
-
-        <!-- lower spine knobs below canvas -->
-        <circle class="bone" stroke-width="2.5" cx="520" cy="456" r="7"/>
-        <circle class="bone" stroke-width="2.5" cx="520" cy="472" r="7"/>
-        <circle class="bone" stroke-width="2.5" cx="520" cy="488" r="6"/>
-        <circle class="bone" stroke-width="2.5" cx="520" cy="503" r="6"/>
-
-        <!-- ═══ LEFT ARM GROUP (animated) ═══ -->
-        <g id="arm-left">
-          <!-- upper arm — thick, angled out left and slightly up from shoulder -->
-          <path class="bone" stroke-width="13"
-            d="M306,296 C280,292 240,280 200,268"/>
-          <!-- elbow joint -->
-          <circle cx="200" cy="268" r="14" fill="#111" stroke="#ddd" stroke-width="3"/>
-          <!-- forearm — angling downward toward left hand -->
-          <path class="bone" stroke-width="11"
-            d="M200,268 C175,292 148,318 122,348"/>
-          <!-- wrist knob -->
-          <circle cx="122" cy="348" r="10" fill="#111" stroke="#ddd" stroke-width="2.5"/>
-          <!-- HAND — 5 fingers splayed like reference -->
-          <!-- palm base -->
-          <path class="bone" stroke-width="8"
-            d="M122,348 C112,356 104,362 100,368"/>
-          <!-- finger 1 (pinky, top) -->
-          <path class="bone" stroke-width="4"
-            d="M100,368 C88,362 78,356 68,352"/>
-          <!-- finger 2 -->
-          <path class="bone" stroke-width="4"
-            d="M100,368 C90,372 80,374 70,376"/>
-          <!-- finger 3 (middle) -->
-          <path class="bone" stroke-width="4"
-            d="M100,368 C92,378 84,384 76,390"/>
-          <!-- finger 4 -->
-          <path class="bone" stroke-width="4"
-            d="M100,368 C96,382 94,392 92,402"/>
-          <!-- finger 5 (thumb-like) -->
-          <path class="bone" stroke-width="4"
-            d="M122,348 C118,360 116,372 116,384"/>
-          <!-- knuckle dots -->
-          <circle cx="68" cy="352" r="3" fill="#ddd"/>
-          <circle cx="70" cy="376" r="3" fill="#ddd"/>
-          <circle cx="76" cy="390" r="3" fill="#ddd"/>
-          <circle cx="92" cy="402" r="3" fill="#ddd"/>
-          <circle cx="116" cy="384" r="3" fill="#ddd"/>
-        </g>
-
-        <!-- ═══ RIGHT ARM GROUP (animated, mirrored) ═══ -->
-        <g id="arm-right">
-          <!-- upper arm -->
-          <path class="bone" stroke-width="13"
-            d="M734,296 C760,292 800,280 840,268"/>
-          <!-- elbow joint -->
-          <circle cx="840" cy="268" r="14" fill="#111" stroke="#ddd" stroke-width="3"/>
-          <!-- forearm -->
-          <path class="bone" stroke-width="11"
-            d="M840,268 C865,292 892,318 918,348"/>
-          <!-- wrist knob -->
-          <circle cx="918" cy="348" r="10" fill="#111" stroke="#ddd" stroke-width="2.5"/>
-          <!-- HAND -->
-          <path class="bone" stroke-width="8"
-            d="M918,348 C928,356 936,362 940,368"/>
-          <!-- finger 1 -->
-          <path class="bone" stroke-width="4"
-            d="M940,368 C952,362 962,356 972,352"/>
-          <!-- finger 2 -->
-          <path class="bone" stroke-width="4"
-            d="M940,368 C950,372 960,374 970,376"/>
-          <!-- finger 3 -->
-          <path class="bone" stroke-width="4"
-            d="M940,368 C948,378 956,384 964,390"/>
-          <!-- finger 4 -->
-          <path class="bone" stroke-width="4"
-            d="M940,368 C944,382 946,392 948,402"/>
-          <!-- finger 5 -->
-          <path class="bone" stroke-width="4"
-            d="M918,348 C922,360 924,372 924,384"/>
-          <!-- knuckle dots -->
-          <circle cx="972" cy="352" r="3" fill="#ddd"/>
-          <circle cx="970" cy="376" r="3" fill="#ddd"/>
-          <circle cx="964" cy="390" r="3" fill="#ddd"/>
-          <circle cx="948" cy="402" r="3" fill="#ddd"/>
-          <circle cx="924" cy="384" r="3" fill="#ddd"/>
-        </g>
-
-      </svg>
-
-      <canvas width="580" height="360"></canvas>
+<div id="gameTitle">⚔ Dungeon Explorer ⚔</div>
+<div id="wrapper">
+  <canvas id="gameCanvas" width="480" height="480"></canvas>
+  <div id="sidebar">
+    <div class="panel">
+      <h3>Bohater</h3>
+      <div class="stat-row"><span>HP</span><span class="stat-val" id="hpVal">100/100</span></div>
+      <div class="bar-wrap"><div class="bar bar-hp" id="hpBar" style="width:100%"></div></div>
+      <div class="stat-row"><span>MP</span><span class="stat-val" id="mpVal">50/50</span></div>
+      <div class="bar-wrap"><div class="bar bar-mp" id="mpBar" style="width:100%"></div></div>
+      <div class="stat-row"><span>ATK</span><span class="stat-val" id="atkVal">15</span></div>
+      <div class="stat-row"><span>DEF</span><span class="stat-val" id="defVal">5</span></div>
+      <div class="stat-row"><span>Pokój</span><span class="stat-val" id="roomVal">1</span></div>
     </div>
+    <div class="panel">
+      <h3>Ekwipunek</h3>
+      <div id="inventoryList">Brak przedmiotów</div>
+    </div>
+    <div class="panel">
+      <h3>Log</h3>
+      <div id="msgLog"></div>
+    </div>
+    <div class="panel">
+      <h3>Sterowanie</h3>
+      <div id="controls">
+        WASD / strzałki — ruch<br>
+        E — interakcja<br>
+        ENTER — walka / potwierdzenie<br>
+        1/2/3 — wybór ataku
+      </div>
+    </div>
+  </div>
+</div>
 
-    <script>
-      // ── Skeleton animation ──────────────────────────────────────────
-      const skull   = document.getElementById("skull");
-      const armL    = document.getElementById("arm-left");
-      const armR    = document.getElementById("arm-right");
-      let t = 0;
+<script>
+// ─────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────
+const TILE = 48;
+const COLS = 10;
+const ROWS = 10;
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
 
-      function animateSkeleton() {
-        t += 0.016;
+// ─────────────────────────────────────────────
+// PIXEL ART SPRITE DRAWING (placeholder until you swap PNGs)
+// ─────────────────────────────────────────────
+function drawSprite(type, x, y, scale=1) {
+  const s = TILE * scale;
+  ctx.save();
+  ctx.translate(x, y);
 
-        // Head: slow circular orbit
-        const hx = Math.sin(t * 0.7) * 7;
-        const hy = Math.cos(t * 0.7) * 5;
-        skull.setAttribute("transform", `translate(${hx},${hy})`);
+  if (type === 'player') {
+    // body
+    ctx.fillStyle = '#4a7ccc'; ctx.fillRect(s*.25,s*.35,s*.5,s*.45);
+    // head
+    ctx.fillStyle = '#e8c090'; ctx.fillRect(s*.3,s*.1,s*.4,s*.28);
+    // eyes
+    ctx.fillStyle = '#222'; ctx.fillRect(s*.37,s*.17,s*.08,s*.08); ctx.fillRect(s*.55,s*.17,s*.08,s*.08);
+    // sword
+    ctx.fillStyle = '#c0c0c0'; ctx.fillRect(s*.72,s*.2,s*.06,s*.35);
+    ctx.fillStyle = '#c8a84b'; ctx.fillRect(s*.68,s*.2,s*.14,s*.06);
+    // legs
+    ctx.fillStyle = '#2a4a8a'; ctx.fillRect(s*.25,s*.78,s*.2,s*.18); ctx.fillRect(s*.55,s*.78,s*.2,s*.18);
+  }
 
-        // Arms: gentle bob, opposite phase
-        const amp = 14;
-        const lY =  Math.sin(t * 0.9) * amp;
-        const rY = -Math.sin(t * 0.9) * amp;
-        armL.setAttribute("transform", `translate(0,${lY})`);
-        armR.setAttribute("transform", `translate(0,${rY})`);
+  else if (type === 'enemy_slime') {
+    ctx.fillStyle = '#2ecc71';
+    ctx.beginPath(); ctx.ellipse(s*.5,s*.6,s*.35,s*.28,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#27ae60';
+    ctx.beginPath(); ctx.ellipse(s*.5,s*.55,s*.28,s*.22,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#1a8a4a';
+    ctx.fillRect(s*.35,s*.42,s*.08,s*.08); ctx.fillRect(s*.57,s*.42,s*.08,s*.08);
+    // shine
+    ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillRect(s*.38,s*.37,s*.1,s*.06);
+  }
 
-        requestAnimationFrame(animateSkeleton);
+  else if (type === 'enemy_skeleton') {
+    // bones body
+    ctx.fillStyle = '#ddd8c0';
+    ctx.fillRect(s*.35,s*.35,s*.3,s*.35);
+    // ribs
+    ctx.fillStyle = '#1a1810';
+    ctx.fillRect(s*.38,s*.4,s*.24,s*.03); ctx.fillRect(s*.38,s*.48,s*.24,s*.03); ctx.fillRect(s*.38,s*.56,s*.24,s*.03);
+    // skull
+    ctx.fillStyle = '#ddd8c0';
+    ctx.beginPath(); ctx.ellipse(s*.5,s*.24,s*.17,s*.15,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#1a1810';
+    ctx.fillRect(s*.4,s*.2,s*.08,s*.1); ctx.fillRect(s*.52,s*.2,s*.08,s*.1);
+    // legs
+    ctx.fillStyle = '#ddd8c0';
+    ctx.fillRect(s*.35,s*.68,s*.1,s*.28); ctx.fillRect(s*.55,s*.68,s*.1,s*.28);
+  }
+
+  else if (type === 'enemy_wizard') {
+    // robe
+    ctx.fillStyle = '#6a2a9a';
+    ctx.beginPath();
+    ctx.moveTo(s*.25,s*.95); ctx.lineTo(s*.35,s*.3); ctx.lineTo(s*.65,s*.3); ctx.lineTo(s*.75,s*.95);
+    ctx.fill();
+    // face
+    ctx.fillStyle = '#e8c090'; ctx.beginPath(); ctx.ellipse(s*.5,s*.22,s*.14,s*.13,0,0,Math.PI*2); ctx.fill();
+    // hat
+    ctx.fillStyle = '#2a0a4a';
+    ctx.beginPath(); ctx.moveTo(s*.28,s*.18); ctx.lineTo(s*.5,s*-.02); ctx.lineTo(s*.72,s*.18); ctx.fill();
+    ctx.fillRect(s*.22,s*.16,s*.56,s*.06);
+    // staff
+    ctx.fillStyle = '#7a4a1a'; ctx.fillRect(s*.74,s*.15,s*.06,s*.7);
+    ctx.fillStyle = '#c8a84b'; ctx.beginPath(); ctx.arc(s*.77,s*.14,s*.07,0,Math.PI*2); ctx.fill();
+    // eyes
+    ctx.fillStyle = '#ff4444'; ctx.fillRect(s*.43,s*.19,s*.06,s*.06); ctx.fillRect(s*.51,s*.19,s*.06,s*.06);
+  }
+
+  else if (type === 'chest') {
+    ctx.fillStyle = '#7a4a1a'; ctx.fillRect(s*.1,s*.35,s*.8,s*.5);
+    ctx.fillStyle = '#5a3010'; ctx.fillRect(s*.1,s*.35,s*.8,s*.08);
+    ctx.fillStyle = '#c8a84b'; ctx.fillRect(s*.42,s*.52,s*.16,s*.16);
+    ctx.fillStyle = '#e0b84b'; ctx.fillRect(s*.1,s*.35,s*.8,s*.04);
+    // lid
+    ctx.fillStyle = '#8a5a2a'; ctx.fillRect(s*.1,s*.22,s*.8,s*.15);
+    ctx.beginPath(); ctx.ellipse(s*.5,s*.22,s*.4,s*.08,0,0,Math.PI); ctx.fillStyle='#8a5a2a'; ctx.fill();
+  }
+
+  else if (type === 'chest_open') {
+    ctx.fillStyle = '#7a4a1a'; ctx.fillRect(s*.1,s*.45,s*.8,s*.4);
+    ctx.fillStyle = '#c8a84b'; ctx.fillRect(s*.42,s*.58,s*.16,s*.14);
+    // open lid
+    ctx.fillStyle = '#8a5a2a'; ctx.fillRect(s*.1,s*.12,s*.8,s*.15);
+    ctx.fillStyle = '#c8a84b66';
+    for(let i=0;i<5;i++){ctx.fillRect(s*(.25+i*.12),s*.3,s*.06,s*.06);}
+  }
+
+  else if (type === 'door_n' || type === 'door_s' || type === 'door_e' || type === 'door_w') {
+    ctx.fillStyle = '#6a4a2a'; ctx.fillRect(s*.2,s*.05,s*.6,s*.9);
+    ctx.fillStyle = '#4a2a0a'; ctx.fillRect(s*.25,s*.1,s*.5,s*.8);
+    ctx.fillStyle = '#c8a84b'; ctx.beginPath(); ctx.arc(s*.5,s*.5,s*.06,0,Math.PI*2); ctx.fill();
+    // frame
+    ctx.strokeStyle = '#3a2010'; ctx.lineWidth=3;
+    ctx.strokeRect(s*.2,s*.05,s*.6,s*.9);
+  }
+
+  else if (type === 'key') {
+    ctx.fillStyle = '#c8a84b';
+    ctx.beginPath(); ctx.arc(s*.38,s*.45,s*.14,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#0a0a0f'; ctx.beginPath(); ctx.arc(s*.38,s*.45,s*.07,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#c8a84b'; ctx.fillRect(s*.5,s*.42,s*.3,s*.06);
+    ctx.fillRect(s*.68,s*.42,s*.06,s*.12); ctx.fillRect(s*.6,s*.42,s*.06,s*.1);
+  }
+
+  else if (type === 'potion_hp') {
+    ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.ellipse(s*.5,s*.6,s*.22,s*.28,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#7a1a1a'; ctx.fillRect(s*.4,s*.6,s*.2,s*.18);
+    ctx.fillStyle = '#888'; ctx.fillRect(s*.42,s*.28,s*.16,s*.14);
+    ctx.fillStyle = '#fff5'; ctx.fillRect(s*.4,s*.42,s*.08,s*.2);
+  }
+
+  else if (type === 'potion_mp') {
+    ctx.fillStyle = '#2980b9'; ctx.beginPath(); ctx.ellipse(s*.5,s*.6,s*.22,s*.28,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#1a4a7a'; ctx.fillRect(s*.4,s*.6,s*.2,s*.18);
+    ctx.fillStyle = '#888'; ctx.fillRect(s*.42,s*.28,s*.16,s*.14);
+    ctx.fillStyle = '#fff5'; ctx.fillRect(s*.4,s*.42,s*.08,s*.2);
+  }
+
+  else if (type === 'sword') {
+    ctx.fillStyle = '#c0c0c0'; ctx.fillRect(s*.46,s*.1,s*.08,s*.62);
+    ctx.fillStyle = '#c8a84b'; ctx.fillRect(s*.3,s*.42,s*.4,s*.08);
+    ctx.fillStyle = '#7a4a1a'; ctx.fillRect(s*.44,s*.7,s*.12,s*.2);
+    ctx.fillStyle = '#e0e0e0'; ctx.fillRect(s*.48,s*.1,s*.04,s*.56);
+  }
+
+  else if (type === 'shield') {
+    ctx.fillStyle = '#c8a84b';
+    ctx.beginPath(); ctx.moveTo(s*.5,s*.85); ctx.lineTo(s*.18,s*.3); ctx.lineTo(s*.5,s*.15); ctx.lineTo(s*.82,s*.3); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#8a6a1a';
+    ctx.beginPath(); ctx.moveTo(s*.5,s*.78); ctx.lineTo(s*.24,s*.34); ctx.lineTo(s*.5,s*.22); ctx.lineTo(s*.76,s*.34); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#c8a84b'; ctx.beginPath(); ctx.arc(s*.5,s*.5,s*.08,0,Math.PI*2); ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────
+// TILE DRAWING
+// ─────────────────────────────────────────────
+function drawTile(type, x, y) {
+  if (type === 1) { // floor
+    ctx.fillStyle = '#1e1a12';
+    ctx.fillRect(x,y,TILE,TILE);
+    ctx.strokeStyle = '#28241a';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(x+1,y+1,TILE-2,TILE-2);
+    // subtle grain
+    ctx.fillStyle = 'rgba(255,255,200,0.015)';
+    ctx.fillRect(x+2,y+2,TILE-4,TILE-4);
+  } else if (type === 0) { // wall
+    ctx.fillStyle = '#0d0b08';
+    ctx.fillRect(x,y,TILE,TILE);
+    ctx.fillStyle = '#181410';
+    ctx.fillRect(x+2,y+2,TILE-4,12);
+    ctx.fillRect(x+2,y+18,TILE-4,12);
+    ctx.fillRect(x+2,y+34,TILE-4,12);
+    ctx.strokeStyle = '#0a0806';
+    ctx.lineWidth=1;
+    ctx.strokeRect(x,y,TILE,TILE);
+  }
+}
+
+// ─────────────────────────────────────────────
+// ROOMS DEFINITION
+// ─────────────────────────────────────────────
+// map[row][col]: 0=wall, 1=floor
+// exits: n/s/e/w → roomIndex
+// enemies, items, objects
+
+const ROOMS = [
+  { // 0 — start room
+    map: [
+      [0,0,0,0,0,0,0,0,0,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,1], // east exit col9
+      [0,1,1,1,1,1,1,1,1,1],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,0,0,0,0,0,0,0,0,0],
+    ],
+    exits: { e: 1 },
+    enemies: [
+      { type:'slime', col:6, row:3, hp:30, maxHp:30, def:2, atk:8, name:'Śluz', reward:'potion_hp' }
+    ],
+    items: [
+      { type:'chest', col:2, row:2, contains:'sword', opened:false }
+    ],
+    visited: false
+  },
+  { // 1 — corridor room
+    map: [
+      [0,0,0,0,0,0,0,0,0,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [1,1,1,1,1,1,1,1,1,1], // west exit col0, east col9
+      [1,1,1,1,1,1,1,1,1,1],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,0,0,1,1,1,1,0,0,0], // south exit
+      [0,0,0,1,1,1,1,0,0,0],
+    ],
+    exits: { w: 0, e: 2, s: 3 },
+    enemies: [
+      { type:'skeleton', col:5, row:3, hp:50, maxHp:50, def:4, atk:12, name:'Szkielet', reward:'key' },
+      { type:'skeleton', col:3, row:6, hp:40, maxHp:40, def:3, atk:10, name:'Szkielet', reward:'potion_hp' }
+    ],
+    items: [
+      { type:'potion_hp', col:7, row:7, collected:false },
+      { type:'key', col:2, row:2, collected:false }
+    ],
+    visited: false
+  },
+  { // 2 — east room
+    map: [
+      [0,0,0,0,0,0,0,0,0,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [1,1,1,1,1,1,1,1,1,0], // west exit
+      [1,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,0,0,0,0,0,0,0,0,0],
+    ],
+    exits: { w: 1 },
+    enemies: [
+      { type:'wizard', col:5, row:4, hp:60, maxHp:60, def:6, atk:18, name:'Czarownik', reward:'shield' }
+    ],
+    items: [
+      { type:'chest', col:7, row:7, contains:'potion_mp', opened:false }
+    ],
+    visited: false
+  },
+  { // 3 — south room (boss)
+    map: [
+      [0,0,0,1,1,1,1,0,0,0],
+      [0,0,0,1,1,1,1,0,0,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,0,0,0,0,0,0,0,0,0],
+    ],
+    exits: { n: 1 },
+    enemies: [
+      { type:'wizard', col:4, row:5, hp:100, maxHp:100, def:8, atk:22, name:'Arcyczarownik', reward:'potion_mp' }
+    ],
+    items: [
+      { type:'chest', col:8, row:8, contains:'potion_hp', opened:false }
+    ],
+    visited: false,
+    boss: true
+  }
+];
+
+// ─────────────────────────────────────────────
+// PLAYER STATE
+// ─────────────────────────────────────────────
+const player = {
+  col: 2, row: 5,
+  hp: 100, maxHp: 100,
+  mp: 50, maxMp: 50,
+  atk: 15, def: 5,
+  inventory: [],
+  currentRoom: 0
+};
+
+// ATTACKS
+const ATTACKS = [
+  { id:0, name:'Silny cios',      mpCost:0,  dmgMult:1.4, defDebuff:0,  desc:'Potężne uderzenie.' },
+  { id:1, name:'Przebicie tarczy',mpCost:8,  dmgMult:0.9, defDebuff:4,  desc:'Osłabia obronę wroga o 4.' },
+  { id:2, name:'Magiczny cios',   mpCost:14, dmgMult:1.8, defDebuff:0,  desc:'Ignoruje 50% obrony wroga.' },
+];
+
+// ─────────────────────────────────────────────
+// GAME STATE
+// ─────────────────────────────────────────────
+let state = 'explore'; // 'explore' | 'combat' | 'gameover' | 'win'
+let currentEnemy = null;
+let combatLog = [];
+let selectedAttack = 0;
+let playerTurn = true;
+let combatAnim = null; // shake animation
+let shakeFrame = 0;
+let msgLog = [];
+
+function addMsg(msg) {
+  msgLog.unshift(msg);
+  if (msgLog.length > 5) msgLog.pop();
+  const el = document.getElementById('msgLog');
+  el.innerHTML = msgLog.map((m,i) =>
+    `<div class="${i===0?'msg-new':''}">${m}</div>`
+  ).join('');
+}
+
+// ─────────────────────────────────────────────
+// INPUT
+// ─────────────────────────────────────────────
+const keys = {};
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (!keys[k]) {
+    keys[k] = true;
+    handleInput(k);
+  }
+});
+document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+function handleInput(k) {
+  if (state === 'explore') handleExploreInput(k);
+  else if (state === 'combat') handleCombatInput(k);
+  else if (state === 'gameover' || state === 'win') {
+    if (k === 'enter' || k === ' ') resetGame();
+  }
+}
+
+function handleExploreInput(k) {
+  let dc=0, dr=0;
+  if (k==='arrowup'||k==='w') dr=-1;
+  else if (k==='arrowdown'||k==='s') dr=1;
+  else if (k==='arrowleft'||k==='a') dc=-1;
+  else if (k==='arrowright'||k==='d') dc=1;
+  else if (k==='e'||k==='enter') { tryInteract(); return; }
+
+  if (dc!==0||dr!==0) tryMove(dc,dr);
+}
+
+function tryMove(dc, dr) {
+  const room = ROOMS[player.currentRoom];
+  const nc = player.col + dc;
+  const nr = player.row + dr;
+
+  // Check room transition
+  if (nc < 0 || nc >= COLS || nr < 0 || nr >= ROWS) {
+    // boundary — try exit
+    if (dc===1 && room.exits.e !== undefined) changeRoom(room.exits.e, 'e');
+    else if (dc===-1 && room.exits.w !== undefined) changeRoom(room.exits.w, 'w');
+    else if (dr===1 && room.exits.s !== undefined) changeRoom(room.exits.s, 's');
+    else if (dr===-1 && room.exits.n !== undefined) changeRoom(room.exits.n, 'n');
+    return;
+  }
+
+  if (room.map[nr][nc] === 0) return; // wall
+
+  // Check enemy collision
+  const enemy = room.enemies.find(e => e.col===nc && e.row===nr && e.hp>0);
+  if (enemy) {
+    addMsg(`Napotkałeś ${enemy.name}! Wejdź w niego by walczyć (ENTER).`);
+    player.col = nc; player.row = nr - dr; // don't move into enemy
+    // Actually allow adjacent — enter key starts fight
+    return;
+  }
+
+  // Check item / chest collision (just walk over pickups)
+  player.col = nc;
+  player.row = nr;
+
+  checkPickup();
+}
+
+function checkPickup() {
+  const room = ROOMS[player.currentRoom];
+  room.items.forEach(item => {
+    if (item.col === player.col && item.row === player.row) {
+      if (item.type !== 'chest' && !item.collected) {
+        item.collected = true;
+        player.inventory.push(item.type);
+        applyItem(item.type);
+        addMsg(`Zebrałeś: ${itemName(item.type)}!`);
+        updateSidebar();
       }
-      animateSkeleton();
+    }
+  });
+}
 
-      // ── Game ────────────────────────────────────────────────────────
-      const canvas = document.querySelector("canvas");
-      const ctx    = canvas.getContext("2d");
+function tryInteract() {
+  const room = ROOMS[player.currentRoom];
 
-      let rightPressed = false, leftPressed = false;
-      let upPressed    = false, downPressed = false;
+  // Check adjacent enemies
+  const dirs = [{c:0,r:-1},{c:0,r:1},{c:-1,r:0},{c:1,r:0}];
+  for (const d of dirs) {
+    const enemy = room.enemies.find(e =>
+      e.col === player.col+d.c && e.row === player.row+d.r && e.hp>0
+    );
+    if (enemy) { startCombat(enemy); return; }
+  }
 
-      const playerSize = 50;
-      const startX = canvas.width  / 2;
-      const startY = canvas.height - 55;
+  // Also allow on same tile
+  const onTile = room.enemies.find(e => e.col===player.col && e.row===player.row && e.hp>0);
+  if (onTile) { startCombat(onTile); return; }
 
-      let playerX = startX, playerY = startY;
-      let score = 0, dead = false, shakeFrames = 0;
-      const SHAKE_DURATION = 30;
-      let squares = [];
+  // Chest
+  for (const d of [{c:0,r:0},...dirs]) {
+    const chest = room.items.find(i =>
+      i.type==='chest' && i.col===player.col+d.c && i.row===player.row+d.r && !i.opened
+    );
+    if (chest) {
+      chest.opened = true;
+      player.inventory.push(chest.contains);
+      applyItem(chest.contains);
+      addMsg(`Otwarłeś skrzynię! Znalazłeś: ${itemName(chest.contains)}!`);
+      updateSidebar();
+      return;
+    }
+  }
+}
 
-      document.addEventListener("keydown", e => {
-        if      (e.key==="ArrowRight"||e.key==="d"||e.key==="D") rightPressed = true;
-        else if (e.key==="ArrowLeft" ||e.key==="a"||e.key==="A") leftPressed  = true;
-        else if (e.key==="ArrowUp"   ||e.key==="w"||e.key==="W") upPressed    = true;
-        else if (e.key==="ArrowDown" ||e.key==="s"||e.key==="S") downPressed  = true;
-      });
-      document.addEventListener("keyup", e => {
-        if      (e.key==="ArrowRight"||e.key==="d"||e.key==="D") rightPressed = false;
-        else if (e.key==="ArrowLeft" ||e.key==="a"||e.key==="A") leftPressed  = false;
-        else if (e.key==="ArrowUp"   ||e.key==="w"||e.key==="W") upPressed    = false;
-        else if (e.key==="ArrowDown" ||e.key==="s"||e.key==="S") downPressed  = false;
-      });
+function changeRoom(idx, dir) {
+  player.currentRoom = idx;
+  const room = ROOMS[idx];
+  room.visited = true;
 
-      function spawnSquare() {
-        return {
-          x: Math.random() * (canvas.width - playerSize),
-          y: -playerSize - Math.random() * canvas.height,
-          size: playerSize,
-          speedX: (Math.random() * 2 + 1) * (Math.random() < 0.5 ? 1 : -1),
-          speedY: Math.random() * 2 + 1,
-        };
-      }
+  // Place player at opposite entrance
+  if (dir==='e') { player.col=0; player.row=4; }
+  else if (dir==='w') { player.col=COLS-1; player.row=4; }
+  else if (dir==='s') { player.col=4; player.row=0; }
+  else if (dir==='n') { player.col=4; player.row=ROWS-1; }
 
-      function initSquares() {
-        squares = [];
-        for (let i = 0; i < 5; i++) squares.push(spawnSquare());
-      }
+  addMsg(`Wchodzisz do pokoju ${idx+1}${room.boss?' — BOSS!':''}.`);
+  document.getElementById('roomVal').textContent = idx+1;
+}
 
-      function resetAll() {
-        playerX = startX; playerY = startY;
-        dead = false; shakeFrames = 0;
-        rightPressed = false; leftPressed = false;
-        upPressed = false; downPressed = false;
-        initSquares();
-      }
+function applyItem(type) {
+  if (type==='potion_hp') {
+    const heal = Math.floor(player.maxHp*0.4);
+    player.hp = Math.min(player.maxHp, player.hp + heal);
+    addMsg(`Leczysz ${heal} HP!`);
+  } else if (type==='potion_mp') {
+    const heal = Math.floor(player.maxMp*0.5);
+    player.mp = Math.min(player.maxMp, player.mp + heal);
+    addMsg(`Regenerujesz ${heal} MP!`);
+  } else if (type==='sword') {
+    player.atk += 10;
+    addMsg(`Miecz! ATK +10`);
+  } else if (type==='shield') {
+    player.def += 6;
+    addMsg(`Tarcza! DEF +6`);
+  }
+}
 
-      initSquares();
+function itemName(type) {
+  const names = { sword:'⚔ Miecz', shield:'🛡 Tarcza', key:'🗝 Klucz', potion_hp:'❤ Mikstura HP', potion_mp:'💧 Mikstura MP' };
+  return names[type] || type;
+}
 
-      function drawPlayer() {
-        ctx.beginPath();
-        ctx.rect(playerX, playerY, playerSize, playerSize);
-        ctx.fillStyle = "red";
-        ctx.fill();
-        ctx.closePath();
-      }
+// ─────────────────────────────────────────────
+// COMBAT
+// ─────────────────────────────────────────────
+function startCombat(enemy) {
+  state = 'combat';
+  currentEnemy = enemy;
+  currentEnemy._defDebuff = 0;
+  selectedAttack = 0;
+  playerTurn = true;
+  combatLog = [`⚔ Walka z ${enemy.name}!`];
+  addMsg(`⚔ Walka z ${enemy.name}!`);
+}
 
-      function drawSquares() {
-        squares.forEach(sq => {
-          ctx.beginPath();
-          ctx.rect(sq.x, sq.y, sq.size, sq.size);
-          ctx.fillStyle = "#4af";
-          ctx.fill();
-          ctx.closePath();
-          if (!dead) {
-            sq.x += sq.speedX;
-            sq.y += sq.speedY;
-            if (sq.x < 0 || sq.x + sq.size > canvas.width) {
-              sq.speedX *= -1;
-              sq.x = Math.max(0, Math.min(sq.x, canvas.width - sq.size));
-            }
-            if (sq.y > canvas.height) Object.assign(sq, spawnSquare());
-            if (
-              playerX < sq.x + sq.size && playerX + playerSize > sq.x &&
-              playerY < sq.y + sq.size && playerY + playerSize > sq.y
-            ) { dead = true; shakeFrames = SHAKE_DURATION; }
-          }
-        });
-      }
+function handleCombatInput(k) {
+  if (!playerTurn) return;
+  if (k==='1') selectedAttack=0;
+  else if (k==='2') selectedAttack=1;
+  else if (k==='3') selectedAttack=2;
+  else if (k==='enter'||k==='e') doPlayerAttack();
+  else if (k==='arrowup'||k==='w') selectedAttack = (selectedAttack-1+ATTACKS.length)%ATTACKS.length;
+  else if (k==='arrowdown'||k==='s') selectedAttack = (selectedAttack+1)%ATTACKS.length;
+}
 
-      function drawScore() {
-        ctx.font = "20px Arial";
-        ctx.fillStyle = "white";
-        ctx.fillText("Wynik: " + score, 10, 25);
-      }
+function doPlayerAttack() {
+  const atk = ATTACKS[selectedAttack];
+  if (player.mp < atk.mpCost) {
+    combatLog.unshift('❌ Za mało MP!');
+    return;
+  }
+  player.mp -= atk.mpCost;
 
-      function draw() {
-        let shakeX = 0, shakeY = 0;
-        if (shakeFrames > 0) {
-          shakeFrames--;
-          const intensity = Math.floor((shakeFrames / SHAKE_DURATION) * 18);
-          shakeX = (Math.random() - 0.5) * 2 * intensity;
-          shakeY = (Math.random() - 0.5) * 2 * intensity;
-          if (shakeFrames === 0) resetAll();
-        }
+  let dmg;
+  if (atk.id === 2) {
+    // magic: ignore 50% defense
+    const effectiveDef = Math.max(0, (currentEnemy.def + currentEnemy._defDebuff) * 0.5);
+    dmg = Math.max(1, Math.floor(player.atk * atk.dmgMult - effectiveDef));
+  } else {
+    const effectiveDef = Math.max(0, currentEnemy.def + currentEnemy._defDebuff);
+    dmg = Math.max(1, Math.floor(player.atk * atk.dmgMult - effectiveDef));
+  }
 
-        ctx.save();
-        ctx.translate(shakeX, shakeY);
-        ctx.clearRect(-20, -20, canvas.width + 40, canvas.height + 40);
+  currentEnemy.hp -= dmg;
+  combatLog.unshift(`Użyłeś ${atk.name} → ${dmg} obrażeń!`);
 
-        if (dead) {
-          ctx.fillStyle = `rgba(255,0,0,${0.15 * (shakeFrames / SHAKE_DURATION)})`;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
+  if (atk.defDebuff > 0) {
+    currentEnemy._defDebuff -= atk.defDebuff;
+    combatLog.unshift(`Obrona ${currentEnemy.name} osłabiona o ${atk.defDebuff}!`);
+  }
 
-        ctx.beginPath();
-        ctx.strokeStyle = "#555";
-        ctx.strokeRect(0, 0, canvas.width, canvas.height);
-        ctx.closePath();
+  shakeFrame = 12; combatAnim = 'enemy';
 
-        if (!dead) {
-          if (rightPressed) playerX = Math.min(playerX + 5, canvas.width  - playerSize);
-          if (leftPressed)  playerX = Math.max(playerX - 5, 0);
-          if (upPressed)    playerY = Math.max(playerY - 5, 0);
-          if (downPressed)  playerY = Math.min(playerY + 5, canvas.height - playerSize);
-        }
+  if (currentEnemy.hp <= 0) {
+    combatLog.unshift(`✓ ${currentEnemy.name} pokonany!`);
+    addMsg(`✓ ${currentEnemy.name} pokonany!`);
+    // Drop reward
+    if (currentEnemy.reward) {
+      const room = ROOMS[player.currentRoom];
+      room.items.push({ type:currentEnemy.reward, col:currentEnemy.col, row:currentEnemy.row, collected:false });
+      combatLog.unshift(`Upuścił: ${itemName(currentEnemy.reward)}`);
+    }
+    setTimeout(() => {
+      state = 'explore';
+      currentEnemy = null;
+      checkWin();
+      updateSidebar();
+    }, 800);
+    updateSidebar();
+    return;
+  }
 
-        drawPlayer();
-        drawSquares();
-        drawScore();
-        ctx.restore();
-        requestAnimationFrame(draw);
-      }
+  playerTurn = false;
+  setTimeout(doEnemyAttack, 900);
+  updateSidebar();
+}
 
-      draw();
-      setInterval(() => { if (!dead) score++; }, 1000);
-    </script>
-  </body>
+function doEnemyAttack() {
+  if (!currentEnemy || currentEnemy.hp <= 0) return;
+  const dmg = Math.max(1, currentEnemy.atk - player.def + (currentEnemy._defDebuff||0));
+  player.hp -= dmg;
+  combatLog.unshift(`${currentEnemy.name} atakuje → ${dmg} obrażeń!`);
+
+  shakeFrame = 12; combatAnim = 'player';
+
+  if (player.hp <= 0) {
+    player.hp = 0;
+    state = 'gameover';
+    combatLog.unshift('☠ Zostałeś pokonany...');
+    addMsg('☠ Zostałeś pokonany!');
+    updateSidebar();
+    return;
+  }
+  playerTurn = true;
+  updateSidebar();
+}
+
+function checkWin() {
+  const allDead = ROOMS.every(r => r.enemies.every(e => e.hp<=0));
+  if (allDead) { state='win'; addMsg('🏆 Wszystkie pokoje wyczyszczone! Wygrałeś!'); }
+}
+
+// ─────────────────────────────────────────────
+// SIDEBAR UPDATE
+// ─────────────────────────────────────────────
+function updateSidebar() {
+  document.getElementById('hpVal').textContent = `${Math.max(0,player.hp)}/${player.maxHp}`;
+  document.getElementById('mpVal').textContent = `${Math.max(0,player.mp)}/${player.maxMp}`;
+  document.getElementById('hpBar').style.width = `${Math.max(0,player.hp)/player.maxHp*100}%`;
+  document.getElementById('mpBar').style.width = `${Math.max(0,player.mp)/player.maxMp*100}%`;
+  document.getElementById('atkVal').textContent = player.atk;
+  document.getElementById('defVal').textContent = player.def;
+
+  const inv = document.getElementById('inventoryList');
+  if (player.inventory.length === 0) {
+    inv.innerHTML = '<span style="color:#4a4038">Brak przedmiotów</span>';
+  } else {
+    const counts = {};
+    player.inventory.forEach(i => counts[i]=(counts[i]||0)+1);
+    inv.innerHTML = Object.entries(counts).map(([k,v])=>
+      `<div class="item">${itemName(k)}${v>1?` x${v}`:''}</div>`
+    ).join('');
+  }
+}
+
+// ─────────────────────────────────────────────
+// RENDER — EXPLORE
+// ─────────────────────────────────────────────
+function renderExplore() {
+  const room = ROOMS[player.currentRoom];
+
+  // tiles
+  for (let r=0;r<ROWS;r++) {
+    for (let c=0;c<COLS;c++) {
+      drawTile(room.map[r][c], c*TILE, r*TILE);
+    }
+  }
+
+  // items
+  room.items.forEach(item => {
+    if (item.collected || item.opened === true) {
+      if (item.type==='chest') drawSprite('chest_open', item.col*TILE, item.row*TILE);
+    } else {
+      drawSprite(item.type==='chest'?'chest':item.type, item.col*TILE, item.row*TILE);
+    }
+  });
+
+  // enemies
+  room.enemies.forEach(enemy => {
+    if (enemy.hp <= 0) return;
+    const type = enemy.type==='slime'?'enemy_slime':enemy.type==='skeleton'?'enemy_skeleton':'enemy_wizard';
+    drawSprite(type, enemy.col*TILE, enemy.row*TILE);
+    // HP bar
+    const bw = TILE-6;
+    ctx.fillStyle='#3a0a0a'; ctx.fillRect(enemy.col*TILE+3, enemy.row*TILE-8, bw, 5);
+    ctx.fillStyle='#c0392b'; ctx.fillRect(enemy.col*TILE+3, enemy.row*TILE-8, bw*(enemy.hp/enemy.maxHp), 5);
+  });
+
+  // exits arrows
+  const exits = room.exits;
+  ctx.fillStyle='#c8a84b88';
+  ctx.font='bold 20px monospace';
+  ctx.textAlign='center';
+  if (exits.e) ctx.fillText('▶', COLS*TILE-12, (ROWS/2)*TILE);
+  if (exits.w) ctx.fillText('◀', 12, (ROWS/2)*TILE);
+  if (exits.s) ctx.fillText('▼', (COLS/2)*TILE, ROWS*TILE-8);
+  if (exits.n) ctx.fillText('▲', (COLS/2)*TILE, 18);
+
+  // player
+  let px = player.col*TILE, py = player.row*TILE;
+  if (combatAnim==='player' && shakeFrame>0) { px += Math.sin(shakeFrame)*5; }
+  drawSprite('player', px, py);
+}
+
+// ─────────────────────────────────────────────
+// RENDER — COMBAT
+// ─────────────────────────────────────────────
+function renderCombat() {
+  // bg — darken
+  ctx.fillStyle='#0a0a0f';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // scanline vibe
+  for(let y=0;y<canvas.height;y+=4){
+    ctx.fillStyle='rgba(0,0,0,0.15)';
+    ctx.fillRect(0,y,canvas.width,2);
+  }
+
+  // arena floor
+  ctx.fillStyle='#16120e';
+  ctx.fillRect(0,0,canvas.width,280);
+  for(let c=0;c<COLS;c++) for(let r=0;r<6;r++) drawTile(1,c*TILE,r*TILE);
+
+  const e = currentEnemy;
+  const etype = e.type==='slime'?'enemy_slime':e.type==='skeleton'?'enemy_skeleton':'enemy_wizard';
+
+  // enemy sprite (big, 3x)
+  let ex = 260, ey = 40;
+  if (combatAnim==='enemy' && shakeFrame>0) ex += Math.sin(shakeFrame*0.8)*7;
+  ctx.save();
+  ctx.scale(3,3);
+  drawSprite(etype, ex/3, ey/3, 1);
+  ctx.restore();
+
+  // enemy hp bar
+  ctx.fillStyle='#1a0808'; ctx.fillRect(240,180,200,14);
+  ctx.fillStyle='#c0392b'; ctx.fillRect(240,180,200*(e.hp/e.maxHp),14);
+  ctx.strokeStyle='#3a1010'; ctx.lineWidth=1; ctx.strokeRect(240,180,200,14);
+  ctx.fillStyle='#e0d8c0'; ctx.font='11px Courier New'; ctx.textAlign='left';
+  ctx.fillText(`${e.name}  ${Math.max(0,e.hp)}/${e.maxHp}`, 244, 192);
+  if (e._defDebuff < 0) {
+    ctx.fillStyle='#e67e22';
+    ctx.fillText(`DEF ${e.def + e._defDebuff} (osłabiony)`, 244, 208);
+  }
+
+  // player sprite (2x)
+  let ppx = 60, ppy = 100;
+  if (combatAnim==='player' && shakeFrame>0) ppx += Math.sin(shakeFrame)*5;
+  ctx.save();
+  ctx.scale(2,2);
+  drawSprite('player', ppx/2, ppy/2, 1);
+  ctx.restore();
+
+  // player hp/mp
+  ctx.fillStyle='#1a0808'; ctx.fillRect(30,210,160,10);
+  ctx.fillStyle='#c0392b'; ctx.fillRect(30,210,160*(player.hp/player.maxHp),10);
+  ctx.fillStyle='#08081a'; ctx.fillRect(30,224,160,10);
+  ctx.fillStyle='#2980b9'; ctx.fillRect(30,224,160*(player.mp/player.maxMp),10);
+  ctx.fillStyle='#e0d8c0'; ctx.font='10px Courier New'; ctx.textAlign='left';
+  ctx.fillText(`HP ${Math.max(0,player.hp)}/${player.maxHp}`,196,220);
+  ctx.fillText(`MP ${Math.max(0,player.mp)}/${player.maxMp}`,196,234);
+
+  // divider
+  ctx.strokeStyle='#3a3020'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,242); ctx.lineTo(480,242); ctx.stroke();
+
+  // attack menu
+  ctx.fillStyle='#12100a'; ctx.fillRect(0,242,480,238);
+
+  ctx.fillStyle='#c8a84b'; ctx.font='bold 13px Courier New'; ctx.textAlign='left';
+  ctx.fillText('— ATAK —', 20, 265);
+
+  ATTACKS.forEach((atk,i) => {
+    const y = 285 + i*44;
+    const selected = i===selectedAttack;
+    if (selected) {
+      ctx.fillStyle='#2a2218';
+      ctx.fillRect(10, y-18, 460, 40);
+      ctx.strokeStyle='#c8a84b66'; ctx.lineWidth=1;
+      ctx.strokeRect(10,y-18,460,40);
+    }
+    ctx.fillStyle = selected?'#e8d870':'#b0a888';
+    ctx.font = `bold 12px Courier New`;
+    ctx.fillText(`${i+1}. ${atk.name}`, 22, y);
+    ctx.fillStyle='#6a6050'; ctx.font='10px Courier New';
+    ctx.fillText(`MP:${atk.mpCost}  ${atk.desc}`, 22, y+14);
+  });
+
+  // combat log (right side)
+  ctx.fillStyle='#c8a84b'; ctx.font='bold 11px Courier New';
+  ctx.fillText('LOG:', 310, 265);
+  combatLog.slice(0,6).forEach((l,i) => {
+    ctx.fillStyle = i===0?'#c8b87a':'#5a5040';
+    ctx.font='10px Courier New';
+    ctx.fillText(l.slice(0,22), 310, 283+i*17);
+  });
+
+  // hint
+  if (playerTurn) {
+    ctx.fillStyle='#4a8a4a'; ctx.font='11px Courier New'; ctx.textAlign='center';
+    ctx.fillText('ENTER / E — Atakuj    ↑↓ / 1-3 — Wybierz', 240, 472);
+  } else {
+    ctx.fillStyle='#8a4a1a';
+    ctx.fillText('Tura wroga...', 240, 472);
+  }
+}
+
+// ─────────────────────────────────────────────
+// GAME OVER / WIN SCREENS
+// ─────────────────────────────────────────────
+function renderGameOver() {
+  ctx.fillStyle='rgba(0,0,0,0.85)'; ctx.fillRect(0,0,480,480);
+  ctx.fillStyle='#c0392b'; ctx.font='bold 48px Courier New'; ctx.textAlign='center';
+  ctx.fillText('GAME OVER', 240, 200);
+  ctx.fillStyle='#b0a888'; ctx.font='16px Courier New';
+  ctx.fillText('Zostałeś pokonany w lochach...', 240, 250);
+  ctx.fillStyle='#6a6050'; ctx.font='12px Courier New';
+  ctx.fillText('ENTER — zagraj ponownie', 240, 300);
+}
+
+function renderWin() {
+  ctx.fillStyle='rgba(0,0,0,0.85)'; ctx.fillRect(0,0,480,480);
+  ctx.fillStyle='#c8a84b'; ctx.font='bold 40px Courier New'; ctx.textAlign='center';
+  ctx.fillText('WYGRAŁEŚ!', 240, 190);
+  ctx.fillStyle='#b0a888'; ctx.font='16px Courier New';
+  ctx.fillText('Wszystkich wrogów pokonano!', 240, 240);
+  ctx.fillStyle='#6a6050'; ctx.font='12px Courier New';
+  ctx.fillText('ENTER — zagraj ponownie', 240, 290);
+}
+
+// ─────────────────────────────────────────────
+// RESET
+// ─────────────────────────────────────────────
+function resetGame() {
+  player.col=2; player.row=5; player.hp=100; player.mp=50;
+  player.atk=15; player.def=5; player.inventory=[]; player.currentRoom=0;
+  state='explore'; currentEnemy=null; combatLog=[]; selectedAttack=0; playerTurn=true;
+  msgLog=[];
+  // Reset rooms
+  ROOMS.forEach(r => {
+    r.enemies.forEach(e => {
+      e.hp = e.maxHp;
+      e._defDebuff = 0;
+    });
+    r.items.forEach(i => {
+      i.collected = false;
+      if ('opened' in i) i.opened = false;
+      // remove dynamically added items
+    });
+    // remove reward drops (items added at runtime)
+    r.items = r.items.filter(i => !('collected' in i && i._drop));
+    r.visited = false;
+  });
+  updateSidebar();
+  document.getElementById('msgLog').innerHTML='';
+}
+
+// ─────────────────────────────────────────────
+// MAIN LOOP
+// ─────────────────────────────────────────────
+function loop() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  if (shakeFrame>0) shakeFrame--;
+  else combatAnim=null;
+
+  if (state==='explore') renderExplore();
+  else if (state==='combat') renderCombat();
+  else if (state==='gameover') { renderExplore(); renderGameOver(); }
+  else if (state==='win') { renderExplore(); renderWin(); }
+
+  requestAnimationFrame(loop);
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+ROOMS[0].visited = true;
+updateSidebar();
+addMsg('Witaj w lochu! Użyj WASD by się poruszać.');
+addMsg('Podejdź do wroga i naciśnij E by walczyć.');
+loop();
+</script>
+</body>
 </html>
