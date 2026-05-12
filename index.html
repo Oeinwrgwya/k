@@ -1,9 +1,17 @@
 <!DOCTYPE html>
 <html lang="pl">
+
+<!-- ═══════════════════════════════════════════════════════════
+     SEKCJA 1 — HEAD: META, TYTUŁ
+     ═══════════════════════════════════════════════════════════ -->
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dungeon Explorer</title>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SEKCJA 2 — CSS: RESET, BODY, TYTUŁ
+     ═══════════════════════════════════════════════════════════ -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -24,6 +32,10 @@
     margin-bottom: 10px;
     text-shadow: 0 0 12px #c8a84b66;
   }
+
+<!-- ═══════════════════════════════════════════════════════════
+     SEKCJA 3 — CSS: LAYOUT GŁÓWNY, CANVAS, SIDEBAR
+     ═══════════════════════════════════════════════════════════ -->
   #wrapper {
     display: flex;
     gap: 16px;
@@ -41,6 +53,10 @@
     flex-direction: column;
     gap: 10px;
   }
+
+<!-- ═══════════════════════════════════════════════════════════
+     SEKCJA 4 — CSS: PANELE BOCZNE (panel, stat-row, bars)
+     ═══════════════════════════════════════════════════════════ -->
   .panel {
     background: #12100a;
     border: 1px solid #3a3020;
@@ -68,6 +84,10 @@
   .bar { height: 8px; border-radius: 1px; transition: width 0.3s; }
   .bar-hp { background: linear-gradient(90deg, #7a1a1a, #c0392b); }
   .bar-mp { background: linear-gradient(90deg, #1a2a7a, #2980b9); }
+
+<!-- ═══════════════════════════════════════════════════════════
+     SEKCJA 5 — CSS: EKWIPUNEK, STEROWANIE, LOG WIADOMOŚCI
+     ═══════════════════════════════════════════════════════════ -->
   #inventoryList {
     font-size: 11px;
     color: #b0a888;
@@ -90,8 +110,11 @@
   #msgLog .msg-new { color: #c8b87a; }
 </style>
 </head>
-<body>
 
+<!-- ═══════════════════════════════════════════════════════════
+     SEKCJA 6 — HTML: STRUKTURA STRONY (canvas + sidebar)
+     ═══════════════════════════════════════════════════════════ -->
+<body>
 <div id="gameTitle">⚔ Dungeon Explorer ⚔</div>
 <div id="wrapper">
   <canvas id="gameCanvas" width="480" height="480"></canvas>
@@ -127,9 +150,9 @@
 </div>
 
 <script>
-// ─────────────────────────────────────────────
-// CONSTANTS
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 7 — STAŁE I INICJALIZACJA CANVAS
+// ═══════════════════════════════════════════════════════════
 const TILE = 48;
 const COLS = 10;
 const ROWS = 10;
@@ -137,25 +160,20 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 
-// ─────────────────────────────────────────────
-// PIXEL ART SPRITE DRAWING (placeholder until you swap PNGs)
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 8 — SPRITE: GRACZ I WRÓG ŚLUZ
+// ═══════════════════════════════════════════════════════════
 function drawSprite(type, x, y, scale=1) {
   const s = TILE * scale;
   ctx.save();
   ctx.translate(x, y);
 
   if (type === 'player') {
-    // body
     ctx.fillStyle = '#4a7ccc'; ctx.fillRect(s*.25,s*.35,s*.5,s*.45);
-    // head
     ctx.fillStyle = '#e8c090'; ctx.fillRect(s*.3,s*.1,s*.4,s*.28);
-    // eyes
     ctx.fillStyle = '#222'; ctx.fillRect(s*.37,s*.17,s*.08,s*.08); ctx.fillRect(s*.55,s*.17,s*.08,s*.08);
-    // sword
     ctx.fillStyle = '#c0c0c0'; ctx.fillRect(s*.72,s*.2,s*.06,s*.35);
     ctx.fillStyle = '#c8a84b'; ctx.fillRect(s*.68,s*.2,s*.14,s*.06);
-    // legs
     ctx.fillStyle = '#2a4a8a'; ctx.fillRect(s*.25,s*.78,s*.2,s*.18); ctx.fillRect(s*.55,s*.78,s*.2,s*.18);
   }
 
@@ -166,52 +184,47 @@ function drawSprite(type, x, y, scale=1) {
     ctx.beginPath(); ctx.ellipse(s*.5,s*.55,s*.28,s*.22,0,0,Math.PI*2); ctx.fill();
     ctx.fillStyle = '#1a8a4a';
     ctx.fillRect(s*.35,s*.42,s*.08,s*.08); ctx.fillRect(s*.57,s*.42,s*.08,s*.08);
-    // shine
     ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillRect(s*.38,s*.37,s*.1,s*.06);
   }
 
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 9 — SPRITE: WRÓG SZKIELET I CZAROWNIK
+// ═══════════════════════════════════════════════════════════
   else if (type === 'enemy_skeleton') {
-    // bones body
     ctx.fillStyle = '#ddd8c0';
     ctx.fillRect(s*.35,s*.35,s*.3,s*.35);
-    // ribs
     ctx.fillStyle = '#1a1810';
     ctx.fillRect(s*.38,s*.4,s*.24,s*.03); ctx.fillRect(s*.38,s*.48,s*.24,s*.03); ctx.fillRect(s*.38,s*.56,s*.24,s*.03);
-    // skull
     ctx.fillStyle = '#ddd8c0';
     ctx.beginPath(); ctx.ellipse(s*.5,s*.24,s*.17,s*.15,0,0,Math.PI*2); ctx.fill();
     ctx.fillStyle = '#1a1810';
     ctx.fillRect(s*.4,s*.2,s*.08,s*.1); ctx.fillRect(s*.52,s*.2,s*.08,s*.1);
-    // legs
     ctx.fillStyle = '#ddd8c0';
     ctx.fillRect(s*.35,s*.68,s*.1,s*.28); ctx.fillRect(s*.55,s*.68,s*.1,s*.28);
   }
 
   else if (type === 'enemy_wizard') {
-    // robe
     ctx.fillStyle = '#6a2a9a';
     ctx.beginPath();
     ctx.moveTo(s*.25,s*.95); ctx.lineTo(s*.35,s*.3); ctx.lineTo(s*.65,s*.3); ctx.lineTo(s*.75,s*.95);
     ctx.fill();
-    // face
     ctx.fillStyle = '#e8c090'; ctx.beginPath(); ctx.ellipse(s*.5,s*.22,s*.14,s*.13,0,0,Math.PI*2); ctx.fill();
-    // hat
     ctx.fillStyle = '#2a0a4a';
     ctx.beginPath(); ctx.moveTo(s*.28,s*.18); ctx.lineTo(s*.5,s*-.02); ctx.lineTo(s*.72,s*.18); ctx.fill();
     ctx.fillRect(s*.22,s*.16,s*.56,s*.06);
-    // staff
     ctx.fillStyle = '#7a4a1a'; ctx.fillRect(s*.74,s*.15,s*.06,s*.7);
     ctx.fillStyle = '#c8a84b'; ctx.beginPath(); ctx.arc(s*.77,s*.14,s*.07,0,Math.PI*2); ctx.fill();
-    // eyes
     ctx.fillStyle = '#ff4444'; ctx.fillRect(s*.43,s*.19,s*.06,s*.06); ctx.fillRect(s*.51,s*.19,s*.06,s*.06);
   }
 
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 10 — SPRITE: SKRZYNIA, DRZWI
+// ═══════════════════════════════════════════════════════════
   else if (type === 'chest') {
     ctx.fillStyle = '#7a4a1a'; ctx.fillRect(s*.1,s*.35,s*.8,s*.5);
     ctx.fillStyle = '#5a3010'; ctx.fillRect(s*.1,s*.35,s*.8,s*.08);
     ctx.fillStyle = '#c8a84b'; ctx.fillRect(s*.42,s*.52,s*.16,s*.16);
     ctx.fillStyle = '#e0b84b'; ctx.fillRect(s*.1,s*.35,s*.8,s*.04);
-    // lid
     ctx.fillStyle = '#8a5a2a'; ctx.fillRect(s*.1,s*.22,s*.8,s*.15);
     ctx.beginPath(); ctx.ellipse(s*.5,s*.22,s*.4,s*.08,0,0,Math.PI); ctx.fillStyle='#8a5a2a'; ctx.fill();
   }
@@ -219,7 +232,6 @@ function drawSprite(type, x, y, scale=1) {
   else if (type === 'chest_open') {
     ctx.fillStyle = '#7a4a1a'; ctx.fillRect(s*.1,s*.45,s*.8,s*.4);
     ctx.fillStyle = '#c8a84b'; ctx.fillRect(s*.42,s*.58,s*.16,s*.14);
-    // open lid
     ctx.fillStyle = '#8a5a2a'; ctx.fillRect(s*.1,s*.12,s*.8,s*.15);
     ctx.fillStyle = '#c8a84b66';
     for(let i=0;i<5;i++){ctx.fillRect(s*(.25+i*.12),s*.3,s*.06,s*.06);}
@@ -229,11 +241,13 @@ function drawSprite(type, x, y, scale=1) {
     ctx.fillStyle = '#6a4a2a'; ctx.fillRect(s*.2,s*.05,s*.6,s*.9);
     ctx.fillStyle = '#4a2a0a'; ctx.fillRect(s*.25,s*.1,s*.5,s*.8);
     ctx.fillStyle = '#c8a84b'; ctx.beginPath(); ctx.arc(s*.5,s*.5,s*.06,0,Math.PI*2); ctx.fill();
-    // frame
     ctx.strokeStyle = '#3a2010'; ctx.lineWidth=3;
     ctx.strokeRect(s*.2,s*.05,s*.6,s*.9);
   }
 
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 11 — SPRITE: PRZEDMIOTY (KLUCZ, MIKSTURY, BROŃ)
+// ═══════════════════════════════════════════════════════════
   else if (type === 'key') {
     ctx.fillStyle = '#c8a84b';
     ctx.beginPath(); ctx.arc(s*.38,s*.45,s*.14,0,Math.PI*2); ctx.fill();
@@ -274,20 +288,19 @@ function drawSprite(type, x, y, scale=1) {
   ctx.restore();
 }
 
-// ─────────────────────────────────────────────
-// TILE DRAWING
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 12 — RYSOWANIE KAFELKÓW (podłoga i ściana)
+// ═══════════════════════════════════════════════════════════
 function drawTile(type, x, y) {
-  if (type === 1) { // floor
+  if (type === 1) { // podłoga
     ctx.fillStyle = '#1e1a12';
     ctx.fillRect(x,y,TILE,TILE);
     ctx.strokeStyle = '#28241a';
     ctx.lineWidth = 0.5;
     ctx.strokeRect(x+1,y+1,TILE-2,TILE-2);
-    // subtle grain
     ctx.fillStyle = 'rgba(255,255,200,0.015)';
     ctx.fillRect(x+2,y+2,TILE-4,TILE-4);
-  } else if (type === 0) { // wall
+  } else if (type === 0) { // ściana
     ctx.fillStyle = '#0d0b08';
     ctx.fillRect(x,y,TILE,TILE);
     ctx.fillStyle = '#181410';
@@ -300,21 +313,17 @@ function drawTile(type, x, y) {
   }
 }
 
-// ─────────────────────────────────────────────
-// ROOMS DEFINITION
-// ─────────────────────────────────────────────
-// map[row][col]: 0=wall, 1=floor
-// exits: n/s/e/w → roomIndex
-// enemies, items, objects
-
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 13 — DANE POKOJÓW: POKÓJ 0 I 1
+// ═══════════════════════════════════════════════════════════
 const ROOMS = [
-  { // 0 — start room
+  { // 0 — pokój startowy
     map: [
       [0,0,0,0,0,0,0,0,0,0],
       [0,1,1,1,1,1,1,1,1,0],
       [0,1,1,1,1,1,1,1,1,0],
       [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,1], // east exit col9
+      [0,1,1,1,1,1,1,1,1,1],
       [0,1,1,1,1,1,1,1,1,1],
       [0,1,1,1,1,1,1,1,1,0],
       [0,1,1,1,1,1,1,1,1,0],
@@ -330,17 +339,17 @@ const ROOMS = [
     ],
     visited: false
   },
-  { // 1 — corridor room
+  { // 1 — korytarz
     map: [
       [0,0,0,0,0,0,0,0,0,0],
       [0,1,1,1,1,1,1,1,1,0],
       [0,1,1,1,1,1,1,1,1,0],
       [0,1,1,1,1,1,1,1,1,0],
-      [1,1,1,1,1,1,1,1,1,1], // west exit col0, east col9
+      [1,1,1,1,1,1,1,1,1,1],
       [1,1,1,1,1,1,1,1,1,1],
       [0,1,1,1,1,1,1,1,1,0],
       [0,1,1,1,1,1,1,1,1,0],
-      [0,0,0,1,1,1,1,0,0,0], // south exit
+      [0,0,0,1,1,1,1,0,0,0],
       [0,0,0,1,1,1,1,0,0,0],
     ],
     exits: { w: 0, e: 2, s: 3 },
@@ -354,13 +363,17 @@ const ROOMS = [
     ],
     visited: false
   },
-  { // 2 — east room
+
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 14 — DANE POKOJÓW: POKÓJ 2 I 3 (BOSS)
+// ═══════════════════════════════════════════════════════════
+  { // 2 — pokój wschodni
     map: [
       [0,0,0,0,0,0,0,0,0,0],
       [0,1,1,1,1,1,1,1,1,0],
       [0,1,1,1,1,1,1,1,1,0],
       [0,1,1,1,1,1,1,1,1,0],
-      [1,1,1,1,1,1,1,1,1,0], // west exit
+      [1,1,1,1,1,1,1,1,1,0],
       [1,1,1,1,1,1,1,1,1,0],
       [0,1,1,1,1,1,1,1,1,0],
       [0,1,1,1,1,1,1,1,1,0],
@@ -376,7 +389,7 @@ const ROOMS = [
     ],
     visited: false
   },
-  { // 3 — south room (boss)
+  { // 3 — pokój południowy (boss)
     map: [
       [0,0,0,1,1,1,1,0,0,0],
       [0,0,0,1,1,1,1,0,0,0],
@@ -401,9 +414,9 @@ const ROOMS = [
   }
 ];
 
-// ─────────────────────────────────────────────
-// PLAYER STATE
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 15 — STAN GRACZA I DEFINICJA ATAKÓW
+// ═══════════════════════════════════════════════════════════
 const player = {
   col: 2, row: 5,
   hp: 100, maxHp: 100,
@@ -413,22 +426,21 @@ const player = {
   currentRoom: 0
 };
 
-// ATTACKS
 const ATTACKS = [
-  { id:0, name:'Silny cios',      mpCost:0,  dmgMult:1.4, defDebuff:0,  desc:'Potężne uderzenie.' },
-  { id:1, name:'Przebicie tarczy',mpCost:8,  dmgMult:0.9, defDebuff:4,  desc:'Osłabia obronę wroga o 4.' },
-  { id:2, name:'Magiczny cios',   mpCost:14, dmgMult:1.8, defDebuff:0,  desc:'Ignoruje 50% obrony wroga.' },
+  { id:0, name:'Silny cios',       mpCost:0,  dmgMult:1.4, defDebuff:0, desc:'Potężne uderzenie.' },
+  { id:1, name:'Przebicie tarczy', mpCost:8,  dmgMult:0.9, defDebuff:4, desc:'Osłabia obronę wroga o 4.' },
+  { id:2, name:'Magiczny cios',    mpCost:14, dmgMult:1.8, defDebuff:0, desc:'Ignoruje 50% obrony wroga.' },
 ];
 
-// ─────────────────────────────────────────────
-// GAME STATE
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 16 — GLOBALNY STAN GRY I LOG WIADOMOŚCI
+// ═══════════════════════════════════════════════════════════
 let state = 'explore'; // 'explore' | 'combat' | 'gameover' | 'win'
 let currentEnemy = null;
 let combatLog = [];
 let selectedAttack = 0;
 let playerTurn = true;
-let combatAnim = null; // shake animation
+let combatAnim = null;
 let shakeFrame = 0;
 let msgLog = [];
 
@@ -441,9 +453,9 @@ function addMsg(msg) {
   ).join('');
 }
 
-// ─────────────────────────────────────────────
-// INPUT
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 17 — INPUT: OBSŁUGA KLAWIATURY
+// ═══════════════════════════════════════════════════════════
 const keys = {};
 document.addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
@@ -469,43 +481,54 @@ function handleExploreInput(k) {
   else if (k==='arrowleft'||k==='a') dc=-1;
   else if (k==='arrowright'||k==='d') dc=1;
   else if (k==='e'||k==='enter') { tryInteract(); return; }
-
   if (dc!==0||dr!==0) tryMove(dc,dr);
 }
 
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 18 — RUCH GRACZA I ZMIANA POKOJU
+// ═══════════════════════════════════════════════════════════
 function tryMove(dc, dr) {
   const room = ROOMS[player.currentRoom];
   const nc = player.col + dc;
   const nr = player.row + dr;
 
-  // Check room transition
   if (nc < 0 || nc >= COLS || nr < 0 || nr >= ROWS) {
-    // boundary — try exit
-    if (dc===1 && room.exits.e !== undefined) changeRoom(room.exits.e, 'e');
+    if (dc===1  && room.exits.e !== undefined) changeRoom(room.exits.e, 'e');
     else if (dc===-1 && room.exits.w !== undefined) changeRoom(room.exits.w, 'w');
-    else if (dr===1 && room.exits.s !== undefined) changeRoom(room.exits.s, 's');
+    else if (dr===1  && room.exits.s !== undefined) changeRoom(room.exits.s, 's');
     else if (dr===-1 && room.exits.n !== undefined) changeRoom(room.exits.n, 'n');
     return;
   }
 
-  if (room.map[nr][nc] === 0) return; // wall
+  if (room.map[nr][nc] === 0) return;
 
-  // Check enemy collision
   const enemy = room.enemies.find(e => e.col===nc && e.row===nr && e.hp>0);
   if (enemy) {
     addMsg(`Napotkałeś ${enemy.name}! Wejdź w niego by walczyć (ENTER).`);
-    player.col = nc; player.row = nr - dr; // don't move into enemy
-    // Actually allow adjacent — enter key starts fight
+    player.col = nc; player.row = nr - dr;
     return;
   }
 
-  // Check item / chest collision (just walk over pickups)
   player.col = nc;
   player.row = nr;
-
   checkPickup();
 }
 
+function changeRoom(idx, dir) {
+  player.currentRoom = idx;
+  const room = ROOMS[idx];
+  room.visited = true;
+  if (dir==='e') { player.col=0;      player.row=4; }
+  else if (dir==='w') { player.col=COLS-1; player.row=4; }
+  else if (dir==='s') { player.col=4;      player.row=0; }
+  else if (dir==='n') { player.col=4;      player.row=ROWS-1; }
+  addMsg(`Wchodzisz do pokoju ${idx+1}${room.boss?' — BOSS!':''}.`);
+  document.getElementById('roomVal').textContent = idx+1;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 19 — ZBIERANIE PRZEDMIOTÓW I INTERAKCJA ZE SKRZYNIĄ
+// ═══════════════════════════════════════════════════════════
 function checkPickup() {
   const room = ROOMS[player.currentRoom];
   room.items.forEach(item => {
@@ -523,9 +546,8 @@ function checkPickup() {
 
 function tryInteract() {
   const room = ROOMS[player.currentRoom];
-
-  // Check adjacent enemies
   const dirs = [{c:0,r:-1},{c:0,r:1},{c:-1,r:0},{c:1,r:0}];
+
   for (const d of dirs) {
     const enemy = room.enemies.find(e =>
       e.col === player.col+d.c && e.row === player.row+d.r && e.hp>0
@@ -533,11 +555,9 @@ function tryInteract() {
     if (enemy) { startCombat(enemy); return; }
   }
 
-  // Also allow on same tile
   const onTile = room.enemies.find(e => e.col===player.col && e.row===player.row && e.hp>0);
   if (onTile) { startCombat(onTile); return; }
 
-  // Chest
   for (const d of [{c:0,r:0},...dirs]) {
     const chest = room.items.find(i =>
       i.type==='chest' && i.col===player.col+d.c && i.row===player.row+d.r && !i.opened
@@ -553,47 +573,41 @@ function tryInteract() {
   }
 }
 
-function changeRoom(idx, dir) {
-  player.currentRoom = idx;
-  const room = ROOMS[idx];
-  room.visited = true;
-
-  // Place player at opposite entrance
-  if (dir==='e') { player.col=0; player.row=4; }
-  else if (dir==='w') { player.col=COLS-1; player.row=4; }
-  else if (dir==='s') { player.col=4; player.row=0; }
-  else if (dir==='n') { player.col=4; player.row=ROWS-1; }
-
-  addMsg(`Wchodzisz do pokoju ${idx+1}${room.boss?' — BOSS!':''}.`);
-  document.getElementById('roomVal').textContent = idx+1;
-}
-
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 20 — EFEKTY PRZEDMIOTÓW I NAZWY
+// ═══════════════════════════════════════════════════════════
 function applyItem(type) {
-  if (type==='potion_hp') {
-    const heal = Math.floor(player.maxHp*0.4);
+  if (type === 'potion_hp') {
+    const heal = Math.floor(player.maxHp * 0.4);
     player.hp = Math.min(player.maxHp, player.hp + heal);
     addMsg(`Leczysz ${heal} HP!`);
-  } else if (type==='potion_mp') {
-    const heal = Math.floor(player.maxMp*0.5);
+  } else if (type === 'potion_mp') {
+    const heal = Math.floor(player.maxMp * 0.5);
     player.mp = Math.min(player.maxMp, player.mp + heal);
     addMsg(`Regenerujesz ${heal} MP!`);
-  } else if (type==='sword') {
+  } else if (type === 'sword') {
     player.atk += 10;
     addMsg(`Miecz! ATK +10`);
-  } else if (type==='shield') {
+  } else if (type === 'shield') {
     player.def += 6;
     addMsg(`Tarcza! DEF +6`);
   }
 }
 
 function itemName(type) {
-  const names = { sword:'⚔ Miecz', shield:'🛡 Tarcza', key:'🗝 Klucz', potion_hp:'❤ Mikstura HP', potion_mp:'💧 Mikstura MP' };
+  const names = {
+    sword:     '⚔ Miecz',
+    shield:    '🛡 Tarcza',
+    key:       '🗝 Klucz',
+    potion_hp: '❤ Mikstura HP',
+    potion_mp: '💧 Mikstura MP'
+  };
   return names[type] || type;
 }
 
-// ─────────────────────────────────────────────
-// COMBAT
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 21 — WALKA: START I INPUT BOJOWY
+// ═══════════════════════════════════════════════════════════
 function startCombat(enemy) {
   state = 'combat';
   currentEnemy = enemy;
@@ -610,21 +624,20 @@ function handleCombatInput(k) {
   else if (k==='2') selectedAttack=1;
   else if (k==='3') selectedAttack=2;
   else if (k==='enter'||k==='e') doPlayerAttack();
-  else if (k==='arrowup'||k==='w') selectedAttack = (selectedAttack-1+ATTACKS.length)%ATTACKS.length;
-  else if (k==='arrowdown'||k==='s') selectedAttack = (selectedAttack+1)%ATTACKS.length;
+  else if (k==='arrowup'||k==='w')   selectedAttack = (selectedAttack-1+ATTACKS.length) % ATTACKS.length;
+  else if (k==='arrowdown'||k==='s') selectedAttack = (selectedAttack+1) % ATTACKS.length;
 }
 
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 22 — WALKA: ATAK GRACZA
+// ═══════════════════════════════════════════════════════════
 function doPlayerAttack() {
   const atk = ATTACKS[selectedAttack];
-  if (player.mp < atk.mpCost) {
-    combatLog.unshift('❌ Za mało MP!');
-    return;
-  }
+  if (player.mp < atk.mpCost) { combatLog.unshift('❌ Za mało MP!'); return; }
   player.mp -= atk.mpCost;
 
   let dmg;
   if (atk.id === 2) {
-    // magic: ignore 50% defense
     const effectiveDef = Math.max(0, (currentEnemy.def + currentEnemy._defDebuff) * 0.5);
     dmg = Math.max(1, Math.floor(player.atk * atk.dmgMult - effectiveDef));
   } else {
@@ -645,18 +658,12 @@ function doPlayerAttack() {
   if (currentEnemy.hp <= 0) {
     combatLog.unshift(`✓ ${currentEnemy.name} pokonany!`);
     addMsg(`✓ ${currentEnemy.name} pokonany!`);
-    // Drop reward
     if (currentEnemy.reward) {
       const room = ROOMS[player.currentRoom];
       room.items.push({ type:currentEnemy.reward, col:currentEnemy.col, row:currentEnemy.row, collected:false });
       combatLog.unshift(`Upuścił: ${itemName(currentEnemy.reward)}`);
     }
-    setTimeout(() => {
-      state = 'explore';
-      currentEnemy = null;
-      checkWin();
-      updateSidebar();
-    }, 800);
+    setTimeout(() => { state='explore'; currentEnemy=null; checkWin(); updateSidebar(); }, 800);
     updateSidebar();
     return;
   }
@@ -666,6 +673,9 @@ function doPlayerAttack() {
   updateSidebar();
 }
 
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 23 — WALKA: ATAK WROGA I WARUNEK WYGRANEJ
+// ═══════════════════════════════════════════════════════════
 function doEnemyAttack() {
   if (!currentEnemy || currentEnemy.hp <= 0) return;
   const dmg = Math.max(1, currentEnemy.atk - player.def + (currentEnemy._defDebuff||0));
@@ -691,14 +701,14 @@ function checkWin() {
   if (allDead) { state='win'; addMsg('🏆 Wszystkie pokoje wyczyszczone! Wygrałeś!'); }
 }
 
-// ─────────────────────────────────────────────
-// SIDEBAR UPDATE
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 24 — AKTUALIZACJA SIDEBAR (HP, MP, EKWIPUNEK)
+// ═══════════════════════════════════════════════════════════
 function updateSidebar() {
   document.getElementById('hpVal').textContent = `${Math.max(0,player.hp)}/${player.maxHp}`;
   document.getElementById('mpVal').textContent = `${Math.max(0,player.mp)}/${player.maxMp}`;
-  document.getElementById('hpBar').style.width = `${Math.max(0,player.hp)/player.maxHp*100}%`;
-  document.getElementById('mpBar').style.width = `${Math.max(0,player.mp)/player.maxMp*100}%`;
+  document.getElementById('hpBar').style.width  = `${Math.max(0,player.hp)/player.maxHp*100}%`;
+  document.getElementById('mpBar').style.width  = `${Math.max(0,player.mp)/player.maxMp*100}%`;
   document.getElementById('atkVal').textContent = player.atk;
   document.getElementById('defVal').textContent = player.def;
 
@@ -714,20 +724,16 @@ function updateSidebar() {
   }
 }
 
-// ─────────────────────────────────────────────
-// RENDER — EXPLORE
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 25 — RENDER: EKSPLORACJA
+// ═══════════════════════════════════════════════════════════
 function renderExplore() {
   const room = ROOMS[player.currentRoom];
 
-  // tiles
-  for (let r=0;r<ROWS;r++) {
-    for (let c=0;c<COLS;c++) {
+  for (let r=0;r<ROWS;r++)
+    for (let c=0;c<COLS;c++)
       drawTile(room.map[r][c], c*TILE, r*TILE);
-    }
-  }
 
-  // items
   room.items.forEach(item => {
     if (item.collected || item.opened === true) {
       if (item.type==='chest') drawSprite('chest_open', item.col*TILE, item.row*TILE);
@@ -736,64 +742,45 @@ function renderExplore() {
     }
   });
 
-  // enemies
   room.enemies.forEach(enemy => {
     if (enemy.hp <= 0) return;
     const type = enemy.type==='slime'?'enemy_slime':enemy.type==='skeleton'?'enemy_skeleton':'enemy_wizard';
     drawSprite(type, enemy.col*TILE, enemy.row*TILE);
-    // HP bar
     const bw = TILE-6;
     ctx.fillStyle='#3a0a0a'; ctx.fillRect(enemy.col*TILE+3, enemy.row*TILE-8, bw, 5);
     ctx.fillStyle='#c0392b'; ctx.fillRect(enemy.col*TILE+3, enemy.row*TILE-8, bw*(enemy.hp/enemy.maxHp), 5);
   });
 
-  // exits arrows
   const exits = room.exits;
-  ctx.fillStyle='#c8a84b88';
-  ctx.font='bold 20px monospace';
-  ctx.textAlign='center';
+  ctx.fillStyle='#c8a84b88'; ctx.font='bold 20px monospace'; ctx.textAlign='center';
   if (exits.e) ctx.fillText('▶', COLS*TILE-12, (ROWS/2)*TILE);
   if (exits.w) ctx.fillText('◀', 12, (ROWS/2)*TILE);
   if (exits.s) ctx.fillText('▼', (COLS/2)*TILE, ROWS*TILE-8);
   if (exits.n) ctx.fillText('▲', (COLS/2)*TILE, 18);
 
-  // player
   let px = player.col*TILE, py = player.row*TILE;
   if (combatAnim==='player' && shakeFrame>0) { px += Math.sin(shakeFrame)*5; }
   drawSprite('player', px, py);
 }
 
-// ─────────────────────────────────────────────
-// RENDER — COMBAT
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 26 — RENDER: WALKA — TŁO, WRÓG, GRACZ
+// ═══════════════════════════════════════════════════════════
 function renderCombat() {
-  // bg — darken
-  ctx.fillStyle='#0a0a0f';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  // scanline vibe
+  ctx.fillStyle='#0a0a0f'; ctx.fillRect(0,0,canvas.width,canvas.height);
   for(let y=0;y<canvas.height;y+=4){
-    ctx.fillStyle='rgba(0,0,0,0.15)';
-    ctx.fillRect(0,y,canvas.width,2);
+    ctx.fillStyle='rgba(0,0,0,0.15)'; ctx.fillRect(0,y,canvas.width,2);
   }
-
-  // arena floor
-  ctx.fillStyle='#16120e';
-  ctx.fillRect(0,0,canvas.width,280);
+  ctx.fillStyle='#16120e'; ctx.fillRect(0,0,canvas.width,280);
   for(let c=0;c<COLS;c++) for(let r=0;r<6;r++) drawTile(1,c*TILE,r*TILE);
 
   const e = currentEnemy;
   const etype = e.type==='slime'?'enemy_slime':e.type==='skeleton'?'enemy_skeleton':'enemy_wizard';
 
-  // enemy sprite (big, 3x)
   let ex = 260, ey = 40;
   if (combatAnim==='enemy' && shakeFrame>0) ex += Math.sin(shakeFrame*0.8)*7;
-  ctx.save();
-  ctx.scale(3,3);
-  drawSprite(etype, ex/3, ey/3, 1);
-  ctx.restore();
+  ctx.save(); ctx.scale(3,3); drawSprite(etype, ex/3, ey/3, 1); ctx.restore();
 
-  // enemy hp bar
   ctx.fillStyle='#1a0808'; ctx.fillRect(240,180,200,14);
   ctx.fillStyle='#c0392b'; ctx.fillRect(240,180,200*(e.hp/e.maxHp),14);
   ctx.strokeStyle='#3a1010'; ctx.lineWidth=1; ctx.strokeRect(240,180,200,14);
@@ -804,15 +791,13 @@ function renderCombat() {
     ctx.fillText(`DEF ${e.def + e._defDebuff} (osłabiony)`, 244, 208);
   }
 
-  // player sprite (2x)
   let ppx = 60, ppy = 100;
   if (combatAnim==='player' && shakeFrame>0) ppx += Math.sin(shakeFrame)*5;
-  ctx.save();
-  ctx.scale(2,2);
-  drawSprite('player', ppx/2, ppy/2, 1);
-  ctx.restore();
+  ctx.save(); ctx.scale(2,2); drawSprite('player', ppx/2, ppy/2, 1); ctx.restore();
 
-  // player hp/mp
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 27 — RENDER: WALKA — PASKI HP/MP, MENU ATAKÓW, LOG
+// ═══════════════════════════════════════════════════════════
   ctx.fillStyle='#1a0808'; ctx.fillRect(30,210,160,10);
   ctx.fillStyle='#c0392b'; ctx.fillRect(30,210,160*(player.hp/player.maxHp),10);
   ctx.fillStyle='#08081a'; ctx.fillRect(30,224,160,10);
@@ -821,11 +806,8 @@ function renderCombat() {
   ctx.fillText(`HP ${Math.max(0,player.hp)}/${player.maxHp}`,196,220);
   ctx.fillText(`MP ${Math.max(0,player.mp)}/${player.maxMp}`,196,234);
 
-  // divider
   ctx.strokeStyle='#3a3020'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(0,242); ctx.lineTo(480,242); ctx.stroke();
-
-  // attack menu
   ctx.fillStyle='#12100a'; ctx.fillRect(0,242,480,238);
 
   ctx.fillStyle='#c8a84b'; ctx.font='bold 13px Courier New'; ctx.textAlign='left';
@@ -835,19 +817,16 @@ function renderCombat() {
     const y = 285 + i*44;
     const selected = i===selectedAttack;
     if (selected) {
-      ctx.fillStyle='#2a2218';
-      ctx.fillRect(10, y-18, 460, 40);
-      ctx.strokeStyle='#c8a84b66'; ctx.lineWidth=1;
-      ctx.strokeRect(10,y-18,460,40);
+      ctx.fillStyle='#2a2218'; ctx.fillRect(10,y-18,460,40);
+      ctx.strokeStyle='#c8a84b66'; ctx.lineWidth=1; ctx.strokeRect(10,y-18,460,40);
     }
     ctx.fillStyle = selected?'#e8d870':'#b0a888';
-    ctx.font = `bold 12px Courier New`;
+    ctx.font = 'bold 12px Courier New';
     ctx.fillText(`${i+1}. ${atk.name}`, 22, y);
     ctx.fillStyle='#6a6050'; ctx.font='10px Courier New';
     ctx.fillText(`MP:${atk.mpCost}  ${atk.desc}`, 22, y+14);
   });
 
-  // combat log (right side)
   ctx.fillStyle='#c8a84b'; ctx.font='bold 11px Courier New';
   ctx.fillText('LOG:', 310, 265);
   combatLog.slice(0,6).forEach((l,i) => {
@@ -856,7 +835,6 @@ function renderCombat() {
     ctx.fillText(l.slice(0,22), 310, 283+i*17);
   });
 
-  // hint
   if (playerTurn) {
     ctx.fillStyle='#4a8a4a'; ctx.font='11px Courier New'; ctx.textAlign='center';
     ctx.fillText('ENTER / E — Atakuj    ↑↓ / 1-3 — Wybierz', 240, 472);
@@ -866,9 +844,9 @@ function renderCombat() {
   }
 }
 
-// ─────────────────────────────────────────────
-// GAME OVER / WIN SCREENS
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 28 — EKRANY KOŃCOWE: GAME OVER I WYGRANA
+// ═══════════════════════════════════════════════════════════
 function renderGameOver() {
   ctx.fillStyle='rgba(0,0,0,0.85)'; ctx.fillRect(0,0,480,480);
   ctx.fillStyle='#c0392b'; ctx.font='bold 48px Courier New'; ctx.textAlign='center';
@@ -889,53 +867,46 @@ function renderWin() {
   ctx.fillText('ENTER — zagraj ponownie', 240, 290);
 }
 
-// ─────────────────────────────────────────────
-// RESET
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 29 — RESET GRY
+// ═══════════════════════════════════════════════════════════
 function resetGame() {
   player.col=2; player.row=5; player.hp=100; player.mp=50;
   player.atk=15; player.def=5; player.inventory=[]; player.currentRoom=0;
   state='explore'; currentEnemy=null; combatLog=[]; selectedAttack=0; playerTurn=true;
   msgLog=[];
-  // Reset rooms
+
   ROOMS.forEach(r => {
-    r.enemies.forEach(e => {
-      e.hp = e.maxHp;
-      e._defDebuff = 0;
-    });
+    r.enemies.forEach(e => { e.hp = e.maxHp; e._defDebuff = 0; });
     r.items.forEach(i => {
       i.collected = false;
       if ('opened' in i) i.opened = false;
-      // remove dynamically added items
     });
-    // remove reward drops (items added at runtime)
     r.items = r.items.filter(i => !('collected' in i && i._drop));
     r.visited = false;
   });
+
   updateSidebar();
   document.getElementById('msgLog').innerHTML='';
 }
 
-// ─────────────────────────────────────────────
-// MAIN LOOP
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// SEKCJA 30 — GŁÓWNA PĘTLA GRY I INICJALIZACJA
+// ═══════════════════════════════════════════════════════════
 function loop() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
   if (shakeFrame>0) shakeFrame--;
   else combatAnim=null;
 
-  if (state==='explore') renderExplore();
-  else if (state==='combat') renderCombat();
+  if (state==='explore')  renderExplore();
+  else if (state==='combat')   renderCombat();
   else if (state==='gameover') { renderExplore(); renderGameOver(); }
-  else if (state==='win') { renderExplore(); renderWin(); }
+  else if (state==='win')      { renderExplore(); renderWin(); }
 
   requestAnimationFrame(loop);
 }
 
-// ─────────────────────────────────────────────
-// INIT
-// ─────────────────────────────────────────────
 ROOMS[0].visited = true;
 updateSidebar();
 addMsg('Witaj w lochu! Użyj WASD by się poruszać.');
