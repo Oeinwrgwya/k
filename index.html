@@ -1,917 +1,751 @@
 <!DOCTYPE html>
 <html lang="pl">
-
-<!-- ═══════════════════════════════════════════════════════════
-     SEKCJA 1 — HEAD: META, TYTUŁ
-     ═══════════════════════════════════════════════════════════ -->
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dungeon Explorer</title>
-
-<!-- ═══════════════════════════════════════════════════════════
-     SEKCJA 2 — CSS: RESET, BODY, TYTUŁ
-     ═══════════════════════════════════════════════════════════ -->
+<title>KULKI WARFARE</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --bg: #0a0a0f;
+    --panel: #12121a;
+    --border: #2a2a3a;
+    --gold: #c9a227;
+    --gold2: #e8c85a;
+    --red: #e63946;
+    --blue: #4cc9f0;
+    --green: #57cc99;
+    --text: #e8e8f0;
+    --dim: #666688;
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
+
   body {
-    background: #0a0a0f;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow: hidden;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    font-family: 'Courier New', monospace;
-    color: #e0d8c0;
-  }
-  #gameTitle {
-    font-size: 22px;
-    letter-spacing: 6px;
-    color: #c8a84b;
-    text-transform: uppercase;
-    margin-bottom: 10px;
-    text-shadow: 0 0 12px #c8a84b66;
   }
 
-<!-- ═══════════════════════════════════════════════════════════
-     SEKCJA 3 — CSS: LAYOUT GŁÓWNY, CANVAS, SIDEBAR
-     ═══════════════════════════════════════════════════════════ -->
-  #wrapper {
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
+  /* ── STARFIELD ── */
+  #stars {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
   }
-  canvas {
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-    border: 2px solid #3a3020;
-    box-shadow: 0 0 30px #00000088, inset 0 0 40px #00000044;
+
+  /* ── SCREENS ── */
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10;
+    transition: opacity .4s;
   }
-  #sidebar {
-    width: 200px;
-    display: flex;
+  .screen.hidden { opacity: 0; pointer-events: none; }
+
+  /* ── MENU ── */
+  #menu-screen {
     flex-direction: column;
-    gap: 10px;
+    gap: 40px;
+    background: radial-gradient(ellipse at 50% 30%, #1a1a2e 0%, #0a0a0f 70%);
   }
 
-<!-- ═══════════════════════════════════════════════════════════
-     SEKCJA 4 — CSS: PANELE BOCZNE (panel, stat-row, bars)
-     ═══════════════════════════════════════════════════════════ -->
-  .panel {
-    background: #12100a;
-    border: 1px solid #3a3020;
-    padding: 12px;
-    border-radius: 2px;
+  .title {
+    font-family: 'Cinzel Decorative', cursive;
+    font-size: clamp(28px, 6vw, 64px);
+    font-weight: 900;
+    text-align: center;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 50%, var(--gold) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 20px rgba(201,162,39,.4));
+    letter-spacing: 4px;
   }
-  .panel h3 {
-    font-size: 11px;
-    letter-spacing: 3px;
-    color: #c8a84b;
+  .subtitle {
+    text-align: center;
+    font-size: 14px;
+    letter-spacing: 6px;
+    color: var(--dim);
     text-transform: uppercase;
-    margin-bottom: 8px;
-    border-bottom: 1px solid #3a3020;
-    padding-bottom: 4px;
+    margin-top: -30px;
   }
-  .stat-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    margin: 4px 0;
-    color: #b0a888;
-  }
-  .stat-val { color: #e0d8c0; font-weight: bold; }
-  .bar-wrap { background: #1a1810; height: 8px; border-radius: 1px; margin: 3px 0 6px; }
-  .bar { height: 8px; border-radius: 1px; transition: width 0.3s; }
-  .bar-hp { background: linear-gradient(90deg, #7a1a1a, #c0392b); }
-  .bar-mp { background: linear-gradient(90deg, #1a2a7a, #2980b9); }
 
-<!-- ═══════════════════════════════════════════════════════════
-     SEKCJA 5 — CSS: EKWIPUNEK, STEROWANIE, LOG WIADOMOŚCI
-     ═══════════════════════════════════════════════════════════ -->
-  #inventoryList {
-    font-size: 11px;
-    color: #b0a888;
-    line-height: 1.8;
+  .weapon-grid {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+    justify-content: center;
   }
-  #inventoryList .item { color: #c8a84b; }
-  #controls {
-    font-size: 10px;
-    color: #6a6050;
-    line-height: 2;
-    letter-spacing: 1px;
-  }
-  #msgLog {
-    font-size: 10px;
-    color: #8a8070;
-    line-height: 1.7;
-    max-height: 80px;
+
+  .weapon-card {
+    width: 180px;
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 30px 20px;
+    cursor: pointer;
+    text-align: center;
+    transition: all .25s;
+    position: relative;
     overflow: hidden;
   }
-  #msgLog .msg-new { color: #c8b87a; }
+  .weapon-card::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, var(--gold), transparent, var(--gold));
+    border-radius: 12px;
+    opacity: 0;
+    transition: opacity .25s;
+    z-index: -1;
+  }
+  .weapon-card:hover { transform: translateY(-6px); border-color: var(--gold); }
+  .weapon-card:hover::before { opacity: .3; }
+  .weapon-card.selected {
+    border-color: var(--gold);
+    background: #1e1a0e;
+    box-shadow: 0 0 30px rgba(201,162,39,.3), inset 0 0 20px rgba(201,162,39,.05);
+  }
+  .weapon-card.selected::before { opacity: .5; }
+
+  .weapon-icon { font-size: 52px; margin-bottom: 12px; display: block; }
+  .weapon-name {
+    font-family: 'Cinzel Decorative', cursive;
+    font-size: 14px;
+    color: var(--gold2);
+    letter-spacing: 2px;
+  }
+  .weapon-desc {
+    font-size: 12px;
+    color: var(--dim);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+  .weapon-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    width: 22px; height: 22px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    color: #000;
+    font-weight: 900;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .weapon-card.selected .weapon-badge { opacity: 1; }
+
+  .btn-fight {
+    font-family: 'Cinzel Decorative', cursive;
+    font-size: 18px;
+    letter-spacing: 4px;
+    padding: 16px 60px;
+    background: linear-gradient(135deg, #a07818, var(--gold), #a07818);
+    border: none;
+    border-radius: 8px;
+    color: #1a0f00;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all .2s;
+    box-shadow: 0 4px 20px rgba(201,162,39,.4);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .btn-fight.visible { opacity: 1; pointer-events: all; }
+  .btn-fight:hover { transform: scale(1.05); box-shadow: 0 6px 30px rgba(201,162,39,.6); }
+
+  /* ── ARENA ── */
+  #arena-screen { background: var(--bg); flex-direction: column; gap: 0; }
+
+  #arena-canvas {
+    display: block;
+    border: 3px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 0 60px rgba(0,0,0,.8), inset 0 0 40px rgba(0,0,0,.5);
+  }
+
+  .hud {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+  }
+  .hud-name {
+    font-family: 'Cinzel Decorative', cursive;
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+  .hud-name.player { color: var(--blue); }
+  .hud-name.enemy  { color: var(--red); }
+  .hud-center {
+    font-family: 'Cinzel Decorative', cursive;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 1px;
+  }
+  .hud-bottom {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    font-size: 12px;
+    color: var(--dim);
+    letter-spacing: 1px;
+  }
+
+  /* ── COUNTDOWN OVERLAY ── */
+  #countdown-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 20;
+  }
+  #countdown-num {
+    font-family: 'Cinzel Decorative', cursive;
+    font-size: 120px;
+    font-weight: 900;
+    color: var(--gold2);
+    text-shadow: 0 0 40px var(--gold), 0 0 80px rgba(201,162,39,.4);
+    opacity: 0;
+    transform: scale(2);
+    transition: opacity .15s, transform .5s;
+  }
+  #countdown-num.show { opacity: 1; transform: scale(1); }
+
+  /* ── RESULT ── */
+  #result-screen {
+    flex-direction: column;
+    gap: 24px;
+    background: radial-gradient(ellipse at 50% 40%, #1a1a2e 0%, #0a0a0f 70%);
+  }
+  .result-title {
+    font-family: 'Cinzel Decorative', cursive;
+    font-size: clamp(24px, 5vw, 56px);
+    text-align: center;
+    font-weight: 900;
+    letter-spacing: 4px;
+  }
+  .result-title.win  { color: var(--gold2); text-shadow: 0 0 30px var(--gold); }
+  .result-title.lose { color: var(--red);   text-shadow: 0 0 30px var(--red); }
+  .result-title.draw { color: var(--blue);  text-shadow: 0 0 30px var(--blue); }
+  .result-sub { color: var(--dim); font-size: 16px; letter-spacing: 3px; text-transform: uppercase; }
+
+  .btn-rematch {
+    font-family: 'Cinzel Decorative', cursive;
+    font-size: 14px;
+    letter-spacing: 3px;
+    padding: 14px 50px;
+    background: transparent;
+    border: 2px solid var(--gold);
+    border-radius: 8px;
+    color: var(--gold2);
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-rematch:hover { background: rgba(201,162,39,.15); transform: scale(1.04); }
+  .btn-menu {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    letter-spacing: 2px;
+    padding: 10px 40px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--dim);
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-menu:hover { border-color: var(--dim); color: var(--text); }
 </style>
 </head>
-
-<!-- ═══════════════════════════════════════════════════════════
-     SEKCJA 6 — HTML: STRUKTURA STRONY (canvas + sidebar)
-     ═══════════════════════════════════════════════════════════ -->
 <body>
-<div id="gameTitle">⚔ Dungeon Explorer ⚔</div>
-<div id="wrapper">
-  <canvas id="gameCanvas" width="480" height="480"></canvas>
-  <div id="sidebar">
-    <div class="panel">
-      <h3>Bohater</h3>
-      <div class="stat-row"><span>HP</span><span class="stat-val" id="hpVal">100/100</span></div>
-      <div class="bar-wrap"><div class="bar bar-hp" id="hpBar" style="width:100%"></div></div>
-      <div class="stat-row"><span>MP</span><span class="stat-val" id="mpVal">50/50</span></div>
-      <div class="bar-wrap"><div class="bar bar-mp" id="mpBar" style="width:100%"></div></div>
-      <div class="stat-row"><span>ATK</span><span class="stat-val" id="atkVal">15</span></div>
-      <div class="stat-row"><span>DEF</span><span class="stat-val" id="defVal">5</span></div>
-      <div class="stat-row"><span>Pokój</span><span class="stat-val" id="roomVal">1</span></div>
+
+<canvas id="stars"></canvas>
+
+<!-- MENU -->
+<div class="screen" id="menu-screen">
+  <div class="title">KULKI WARFARE</div>
+  <div class="subtitle">Wybierz broń i wejdź na arenę</div>
+  <div class="weapon-grid">
+    <div class="weapon-card" id="card-sword" onclick="selectWeapon('sword')">
+      <div class="weapon-badge">✓</div>
+      <span class="weapon-icon">⚔️</span>
+      <div class="weapon-name">Miecz</div>
+      <div class="weapon-desc">Obraca się wokół kulki. Trafienie odpycha wroga.</div>
     </div>
-    <div class="panel">
-      <h3>Ekwipunek</h3>
-      <div id="inventoryList">Brak przedmiotów</div>
+    <div class="weapon-card" id="card-bow" onclick="selectWeapon('bow')">
+      <div class="weapon-badge">✓</div>
+      <span class="weapon-icon">🏹</span>
+      <div class="weapon-name">Łuk</div>
+      <div class="weapon-desc">Co sekundę wystrzeliwuje strzałę w kierunku wroga.</div>
     </div>
-    <div class="panel">
-      <h3>Log</h3>
-      <div id="msgLog"></div>
+  </div>
+  <button class="btn-fight" id="btn-fight" onclick="startGame()">WALCZ</button>
+</div>
+
+<!-- ARENA -->
+<div class="screen hidden" id="arena-screen">
+  <div class="hud">
+    <div class="hud-name player" id="hud-player">TY — ⚔️</div>
+    <div class="hud-center">ARENA</div>
+    <div class="hud-name enemy" id="hud-enemy">WRÓG — 🏹</div>
+  </div>
+  <div style="position:relative;">
+    <canvas id="arena-canvas" width="600" height="600"></canvas>
+    <div id="countdown-overlay">
+      <div id="countdown-num">3</div>
     </div>
-    <div class="panel">
-      <h3>Sterowanie</h3>
-      <div id="controls">
-        WASD / strzałki — ruch<br>
-        E — interakcja<br>
-        ENTER — walka / potwierdzenie<br>
-        1/2/3 — wybór ataku
-      </div>
-    </div>
+  </div>
+  <div class="hud-bottom">
+    <span id="info-player">Kulka gracza</span>
+    <span id="info-enemy">Kulka wroga</span>
   </div>
 </div>
 
+<!-- RESULT -->
+<div class="screen hidden" id="result-screen">
+  <div class="result-title" id="result-title">ZWYCIĘSTWO!</div>
+  <div class="result-sub" id="result-sub">Wróg pokonany</div>
+  <button class="btn-rematch" onclick="rematch()">REWANŻ</button>
+  <button class="btn-menu" onclick="goMenu()">Menu główne</button>
+</div>
+
 <script>
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 7 — STAŁE I INICJALIZACJA CANVAS
-// ═══════════════════════════════════════════════════════════
-const TILE = 48;
-const COLS = 10;
-const ROWS = 10;
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-ctx.imageSmoothingEnabled = false;
+// ── STARFIELD ──
+(function(){
+  const c = document.getElementById('stars');
+  const ctx = c.getContext('2d');
+  c.width = window.innerWidth; c.height = window.innerHeight;
+  const stars = Array.from({length:180},()=>({
+    x: Math.random()*c.width, y: Math.random()*c.height,
+    r: Math.random()*1.2+.2, a: Math.random(), da: (Math.random()-.5)*.005
+  }));
+  function drawStars(){
+    ctx.clearRect(0,0,c.width,c.height);
+    stars.forEach(s=>{
+      s.a = Math.max(0.05,Math.min(1,s.a+s.da));
+      if(s.a<=.05||s.a>=1) s.da*=-1;
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(200,200,255,${s.a})`; ctx.fill();
+    });
+    requestAnimationFrame(drawStars);
+  }
+  drawStars();
+})();
 
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 8 — SPRITE: GRACZ I WRÓG ŚLUZ
-// ═══════════════════════════════════════════════════════════
-function drawSprite(type, x, y, scale=1) {
-  const s = TILE * scale;
+// ── GLOBALS ──
+const WEAPONS = ['sword','bow'];
+let playerWeapon = null;
+let enemyWeapon  = null;
+let gameRunning  = false;
+let animFrame    = null;
+let lastTime     = 0;
+
+// ── MENU ──
+function selectWeapon(w){
+  playerWeapon = w;
+  document.querySelectorAll('.weapon-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('card-'+w).classList.add('selected');
+  document.getElementById('btn-fight').classList.add('visible');
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// ── GAME STATE ──
+const W = 600, H = 600;
+const RADIUS = 22;
+const ARENA_PAD = 30;
+
+let player, enemy, arrows, swordAngle;
+
+function initBalls(){
+  enemyWeapon = WEAPONS[Math.floor(Math.random()*WEAPONS.length)];
+
+  const speed = 110; // px/s
+  const angP  = Math.random()*Math.PI*2;
+  const angE  = Math.random()*Math.PI*2;
+
+  player = {
+    x: 130, y: H/2,
+    vx: Math.cos(angP)*speed, vy: Math.sin(angP)*speed,
+    r: RADIUS, weapon: playerWeapon,
+    color: '#4cc9f0', alive: true,
+    pushVx: 0, pushVy: 0
+  };
+  enemy = {
+    x: W-130, y: H/2,
+    vx: Math.cos(angE)*speed, vy: Math.sin(angE)*speed,
+    r: RADIUS, weapon: enemyWeapon,
+    color: '#e63946', alive: true,
+    pushVx: 0, pushVy: 0
+  };
+  arrows = [];
+  swordAngle = { player: 0, enemy: 0 };
+
+  // HUD
+  const wIcon = w => w==='sword'?'⚔️':'🏹';
+  document.getElementById('hud-player').textContent = `TY — ${wIcon(playerWeapon)}`;
+  document.getElementById('hud-enemy').textContent  = `WRÓG — ${wIcon(enemyWeapon)}`;
+  document.getElementById('info-player').textContent = `Kulka: ${playerWeapon==='sword'?'Miecz':'Łuk'}`;
+  document.getElementById('info-enemy').textContent  = `Wróg: ${enemyWeapon==='sword'?'Miecz':'Łuk'}`;
+}
+
+// ── COUNTDOWN ──
+function startGame(){
+  showScreen('arena-screen');
+  initBalls();
+  drawStatic();
+  runCountdown(3);
+}
+
+function drawStatic(){
+  const cv = document.getElementById('arena-canvas');
+  const ctx = cv.getContext('2d');
+  drawArena(ctx, 0);
+}
+
+function runCountdown(n){
+  const el = document.getElementById('countdown-num');
+  el.textContent = n > 0 ? String(n) : 'START!';
+  el.style.color = n > 0 ? '#e8c85a' : '#57cc99';
+  el.style.textShadow = n > 0
+    ? '0 0 40px #c9a227, 0 0 80px rgba(201,162,39,.4)'
+    : '0 0 40px #57cc99, 0 0 80px rgba(87,204,153,.4)';
+
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      el.classList.add('show');
+      setTimeout(()=>{
+        el.classList.remove('show');
+        setTimeout(()=>{
+          if(n > 0) runCountdown(n-1);
+          else {
+            document.getElementById('countdown-overlay').style.display='none';
+            startLoop();
+          }
+        }, 300);
+      }, n===0 ? 600 : 700);
+    });
+  });
+}
+
+// ── ARROW TIMERS ──
+let arrowTimers = {player:0, enemy:0};
+const ARROW_INTERVAL = 1.0; // seconds
+
+// ── MAIN LOOP ──
+function startLoop(){
+  gameRunning = true;
+  arrowTimers = {player:0, enemy:0};
+  lastTime = performance.now();
+  animFrame = requestAnimationFrame(loop);
+}
+
+function loop(ts){
+  if(!gameRunning) return;
+  const dt = Math.min((ts - lastTime)/1000, .05);
+  lastTime = ts;
+  update(dt);
+  const cv = document.getElementById('arena-canvas');
+  const ctx = cv.getContext('2d');
+  drawArena(ctx, dt);
+  animFrame = requestAnimationFrame(loop);
+}
+
+function update(dt){
+  moveBall(player, dt);
+  moveBall(enemy, dt);
+
+  // sword angles
+  swordAngle.player += dt * 3.5;
+  swordAngle.enemy  += dt * 3.5;
+
+  // sword hit detection
+  if(player.weapon==='sword') checkSwordHit(player, enemy, swordAngle.player);
+  if(enemy.weapon==='sword')  checkSwordHit(enemy, player, swordAngle.enemy);
+
+  // arrow shooting
+  if(player.weapon==='bow'){
+    arrowTimers.player += dt;
+    if(arrowTimers.player >= ARROW_INTERVAL){
+      arrowTimers.player = 0;
+      shootArrow(player, enemy, 'player');
+    }
+  }
+  if(enemy.weapon==='bow'){
+    arrowTimers.enemy += dt;
+    if(arrowTimers.enemy >= ARROW_INTERVAL){
+      arrowTimers.enemy = 0;
+      shootArrow(enemy, player, 'enemy');
+    }
+  }
+
+  // move arrows
+  for(let i=arrows.length-1; i>=0; i--){
+    const a = arrows[i];
+    a.x += a.vx*dt; a.y += a.vy*dt;
+    a.life -= dt;
+    // out of bounds
+    if(a.x<0||a.x>W||a.y<0||a.y>H||a.life<=0){ arrows.splice(i,1); continue; }
+    // hit target
+    const target = a.owner==='player' ? enemy : player;
+    const dx=a.x-target.x, dy=a.y-target.y;
+    if(Math.sqrt(dx*dx+dy*dy) < target.r+4){
+      const spd=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
+      target.pushVx += (a.vx/spd)*220;
+      target.pushVy += (a.vy/spd)*220;
+      arrows.splice(i,1);
+      // check kill
+      checkOut(target);
+    }
+  }
+
+  // check if balls left arena
+  checkOut(player);
+  checkOut(enemy);
+}
+
+function moveBall(b, dt){
+  // push decay
+  b.pushVx *= Math.pow(0.04, dt);
+  b.pushVy *= Math.pow(0.04, dt);
+
+  b.x += (b.vx + b.pushVx)*dt;
+  b.y += (b.vy + b.pushVy)*dt;
+
+  // bounce walls
+  if(b.x - b.r < ARENA_PAD)         { b.x = ARENA_PAD+b.r;      b.vx  = Math.abs(b.vx); }
+  if(b.x + b.r > W - ARENA_PAD)     { b.x = W-ARENA_PAD-b.r;    b.vx  = -Math.abs(b.vx); }
+  if(b.y - b.r < ARENA_PAD)         { b.y = ARENA_PAD+b.r;       b.vy  = Math.abs(b.vy); }
+  if(b.y + b.r > H - ARENA_PAD)     { b.y = H-ARENA_PAD-b.r;     b.vy  = -Math.abs(b.vy); }
+
+  // push bounce walls
+  if(b.x - b.r < ARENA_PAD)         b.pushVx = Math.abs(b.pushVx);
+  if(b.x + b.r > W - ARENA_PAD)     b.pushVx = -Math.abs(b.pushVx);
+  if(b.y - b.r < ARENA_PAD)         b.pushVy = Math.abs(b.pushVy);
+  if(b.y + b.r > H - ARENA_PAD)     b.pushVy = -Math.abs(b.pushVy);
+}
+
+const SWORD_LEN   = 32;
+const SWORD_WIDTH = 6;
+
+function checkSwordHit(attacker, target, angle){
+  // sword tip position
+  const tipX = attacker.x + Math.cos(angle)*(attacker.r + SWORD_LEN);
+  const tipY = attacker.y + Math.sin(angle)*(attacker.r + SWORD_LEN);
+  const dx = tipX - target.x, dy = tipY - target.y;
+  const dist = Math.sqrt(dx*dx+dy*dy);
+  if(dist < target.r + SWORD_WIDTH){
+    // push away from attacker
+    const nx = (target.x-attacker.x), ny = (target.y-attacker.y);
+    const nd = Math.sqrt(nx*nx+ny*ny)||1;
+    target.pushVx += (nx/nd)*300;
+    target.pushVy += (ny/nd)*300;
+  }
+}
+
+function shootArrow(from, to, owner){
+  const dx=to.x-from.x, dy=to.y-from.y;
+  const d=Math.sqrt(dx*dx+dy*dy)||1;
+  const spd=320;
+  arrows.push({
+    x: from.x+(dx/d)*(from.r+8),
+    y: from.y+(dy/d)*(from.r+8),
+    vx:(dx/d)*spd, vy:(dy/d)*spd,
+    owner, life:4
+  });
+}
+
+function checkOut(b){
+  // falling off edges (outside hard wall — shouldn't happen with bounce, but just in case)
+  if(b.x < 0||b.x > W||b.y < 0||b.y > H){
+    b.alive = false;
+    endGame(b === player ? 'lose' : 'win');
+  }
+}
+
+// ── DRAW ──
+function drawArena(ctx, dt){
+  // background
+  ctx.fillStyle = '#0d0d15';
+  ctx.fillRect(0,0,W,H);
+
+  // grid
+  ctx.strokeStyle = 'rgba(40,40,70,.5)';
+  ctx.lineWidth = 1;
+  for(let x=0;x<=W;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for(let y=0;y<=H;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  // arena border
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(ARENA_PAD, ARENA_PAD, W-2*ARENA_PAD, H-2*ARENA_PAD);
+
+  // corner decorations
+  const corners = [[ARENA_PAD,ARENA_PAD],[W-ARENA_PAD,ARENA_PAD],[ARENA_PAD,H-ARENA_PAD],[W-ARENA_PAD,H-ARENA_PAD]];
+  ctx.strokeStyle = '#c9a227';
+  ctx.lineWidth = 2;
+  corners.forEach(([cx,cy])=>{
+    const s=16;
+    ctx.strokeRect(cx-s/2,cy-s/2,s,s);
+  });
+
+  // arrows
+  arrows.forEach(a=>{
+    const ang = Math.atan2(a.vy,a.vx);
+    ctx.save();
+    ctx.translate(a.x,a.y);
+    ctx.rotate(ang);
+    ctx.strokeStyle = a.owner==='player' ? '#4cc9f0' : '#e63946';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-14,0); ctx.lineTo(10,0); ctx.stroke();
+    // arrowhead
+    ctx.fillStyle = a.owner==='player' ? '#4cc9f0' : '#e63946';
+    ctx.beginPath(); ctx.moveTo(10,0); ctx.lineTo(2,-5); ctx.lineTo(2,5); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  });
+
+  // draw balls
+  drawBall(ctx, player, swordAngle.player);
+  drawBall(ctx, enemy,  swordAngle.enemy);
+}
+
+function drawBall(ctx, b, sAngle){
+  if(!b.alive) return;
+
+  // glow
+  const grd = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r*2.5);
+  grd.addColorStop(0, b.color+'44');
+  grd.addColorStop(1, 'transparent');
+  ctx.beginPath(); ctx.arc(b.x,b.y,b.r*2.5,0,Math.PI*2);
+  ctx.fillStyle=grd; ctx.fill();
+
+  // body
+  const bGrd = ctx.createRadialGradient(b.x-5,b.y-5,2,b.x,b.y,b.r);
+  bGrd.addColorStop(0,'#fff');
+  bGrd.addColorStop(.3, b.color);
+  bGrd.addColorStop(1, b.color+'88');
+  ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+  ctx.fillStyle=bGrd; ctx.fill();
+  ctx.strokeStyle=b.color; ctx.lineWidth=2; ctx.stroke();
+
+  // weapon
+  if(b.weapon==='sword'){
+    drawSword(ctx, b, sAngle);
+  } else {
+    drawBowIndicator(ctx, b);
+  }
+}
+
+function drawSword(ctx, b, angle){
   ctx.save();
-  ctx.translate(x, y);
+  ctx.translate(b.x, b.y);
+  ctx.rotate(angle);
 
-  if (type === 'player') {
-    ctx.fillStyle = '#4a7ccc'; ctx.fillRect(s*.25,s*.35,s*.5,s*.45);
-    ctx.fillStyle = '#e8c090'; ctx.fillRect(s*.3,s*.1,s*.4,s*.28);
-    ctx.fillStyle = '#222'; ctx.fillRect(s*.37,s*.17,s*.08,s*.08); ctx.fillRect(s*.55,s*.17,s*.08,s*.08);
-    ctx.fillStyle = '#c0c0c0'; ctx.fillRect(s*.72,s*.2,s*.06,s*.35);
-    ctx.fillStyle = '#c8a84b'; ctx.fillRect(s*.68,s*.2,s*.14,s*.06);
-    ctx.fillStyle = '#2a4a8a'; ctx.fillRect(s*.25,s*.78,s*.2,s*.18); ctx.fillRect(s*.55,s*.78,s*.2,s*.18);
-  }
+  // handle
+  ctx.strokeStyle = '#8B6914';
+  ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(b.r+6,0); ctx.stroke();
 
-  else if (type === 'enemy_slime') {
-    ctx.fillStyle = '#2ecc71';
-    ctx.beginPath(); ctx.ellipse(s*.5,s*.6,s*.35,s*.28,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#27ae60';
-    ctx.beginPath(); ctx.ellipse(s*.5,s*.55,s*.28,s*.22,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#1a8a4a';
-    ctx.fillRect(s*.35,s*.42,s*.08,s*.08); ctx.fillRect(s*.57,s*.42,s*.08,s*.08);
-    ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillRect(s*.38,s*.37,s*.1,s*.06);
-  }
+  // guard
+  ctx.strokeStyle = '#c9a227';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(b.r+6,-8); ctx.lineTo(b.r+6,8); ctx.stroke();
 
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 9 — SPRITE: WRÓG SZKIELET I CZAROWNIK
-// ═══════════════════════════════════════════════════════════
-  else if (type === 'enemy_skeleton') {
-    ctx.fillStyle = '#ddd8c0';
-    ctx.fillRect(s*.35,s*.35,s*.3,s*.35);
-    ctx.fillStyle = '#1a1810';
-    ctx.fillRect(s*.38,s*.4,s*.24,s*.03); ctx.fillRect(s*.38,s*.48,s*.24,s*.03); ctx.fillRect(s*.38,s*.56,s*.24,s*.03);
-    ctx.fillStyle = '#ddd8c0';
-    ctx.beginPath(); ctx.ellipse(s*.5,s*.24,s*.17,s*.15,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#1a1810';
-    ctx.fillRect(s*.4,s*.2,s*.08,s*.1); ctx.fillRect(s*.52,s*.2,s*.08,s*.1);
-    ctx.fillStyle = '#ddd8c0';
-    ctx.fillRect(s*.35,s*.68,s*.1,s*.28); ctx.fillRect(s*.55,s*.68,s*.1,s*.28);
-  }
+  // blade
+  const grad = ctx.createLinearGradient(b.r+6,0,b.r+SWORD_LEN,0);
+  grad.addColorStop(0,'#e8e8ff');
+  grad.addColorStop(.5,'#c0c8ff');
+  grad.addColorStop(1,'rgba(192,200,255,0)');
+  ctx.strokeStyle=grad; ctx.lineWidth=SWORD_WIDTH;
+  ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(b.r+6,0); ctx.lineTo(b.r+SWORD_LEN,0); ctx.stroke();
 
-  else if (type === 'enemy_wizard') {
-    ctx.fillStyle = '#6a2a9a';
-    ctx.beginPath();
-    ctx.moveTo(s*.25,s*.95); ctx.lineTo(s*.35,s*.3); ctx.lineTo(s*.65,s*.3); ctx.lineTo(s*.75,s*.95);
-    ctx.fill();
-    ctx.fillStyle = '#e8c090'; ctx.beginPath(); ctx.ellipse(s*.5,s*.22,s*.14,s*.13,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#2a0a4a';
-    ctx.beginPath(); ctx.moveTo(s*.28,s*.18); ctx.lineTo(s*.5,s*-.02); ctx.lineTo(s*.72,s*.18); ctx.fill();
-    ctx.fillRect(s*.22,s*.16,s*.56,s*.06);
-    ctx.fillStyle = '#7a4a1a'; ctx.fillRect(s*.74,s*.15,s*.06,s*.7);
-    ctx.fillStyle = '#c8a84b'; ctx.beginPath(); ctx.arc(s*.77,s*.14,s*.07,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#ff4444'; ctx.fillRect(s*.43,s*.19,s*.06,s*.06); ctx.fillRect(s*.51,s*.19,s*.06,s*.06);
-  }
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 10 — SPRITE: SKRZYNIA, DRZWI
-// ═══════════════════════════════════════════════════════════
-  else if (type === 'chest') {
-    ctx.fillStyle = '#7a4a1a'; ctx.fillRect(s*.1,s*.35,s*.8,s*.5);
-    ctx.fillStyle = '#5a3010'; ctx.fillRect(s*.1,s*.35,s*.8,s*.08);
-    ctx.fillStyle = '#c8a84b'; ctx.fillRect(s*.42,s*.52,s*.16,s*.16);
-    ctx.fillStyle = '#e0b84b'; ctx.fillRect(s*.1,s*.35,s*.8,s*.04);
-    ctx.fillStyle = '#8a5a2a'; ctx.fillRect(s*.1,s*.22,s*.8,s*.15);
-    ctx.beginPath(); ctx.ellipse(s*.5,s*.22,s*.4,s*.08,0,0,Math.PI); ctx.fillStyle='#8a5a2a'; ctx.fill();
-  }
-
-  else if (type === 'chest_open') {
-    ctx.fillStyle = '#7a4a1a'; ctx.fillRect(s*.1,s*.45,s*.8,s*.4);
-    ctx.fillStyle = '#c8a84b'; ctx.fillRect(s*.42,s*.58,s*.16,s*.14);
-    ctx.fillStyle = '#8a5a2a'; ctx.fillRect(s*.1,s*.12,s*.8,s*.15);
-    ctx.fillStyle = '#c8a84b66';
-    for(let i=0;i<5;i++){ctx.fillRect(s*(.25+i*.12),s*.3,s*.06,s*.06);}
-  }
-
-  else if (type === 'door_n' || type === 'door_s' || type === 'door_e' || type === 'door_w') {
-    ctx.fillStyle = '#6a4a2a'; ctx.fillRect(s*.2,s*.05,s*.6,s*.9);
-    ctx.fillStyle = '#4a2a0a'; ctx.fillRect(s*.25,s*.1,s*.5,s*.8);
-    ctx.fillStyle = '#c8a84b'; ctx.beginPath(); ctx.arc(s*.5,s*.5,s*.06,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#3a2010'; ctx.lineWidth=3;
-    ctx.strokeRect(s*.2,s*.05,s*.6,s*.9);
-  }
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 11 — SPRITE: PRZEDMIOTY (KLUCZ, MIKSTURY, BROŃ)
-// ═══════════════════════════════════════════════════════════
-  else if (type === 'key') {
-    ctx.fillStyle = '#c8a84b';
-    ctx.beginPath(); ctx.arc(s*.38,s*.45,s*.14,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#0a0a0f'; ctx.beginPath(); ctx.arc(s*.38,s*.45,s*.07,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#c8a84b'; ctx.fillRect(s*.5,s*.42,s*.3,s*.06);
-    ctx.fillRect(s*.68,s*.42,s*.06,s*.12); ctx.fillRect(s*.6,s*.42,s*.06,s*.1);
-  }
-
-  else if (type === 'potion_hp') {
-    ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.ellipse(s*.5,s*.6,s*.22,s*.28,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#7a1a1a'; ctx.fillRect(s*.4,s*.6,s*.2,s*.18);
-    ctx.fillStyle = '#888'; ctx.fillRect(s*.42,s*.28,s*.16,s*.14);
-    ctx.fillStyle = '#fff5'; ctx.fillRect(s*.4,s*.42,s*.08,s*.2);
-  }
-
-  else if (type === 'potion_mp') {
-    ctx.fillStyle = '#2980b9'; ctx.beginPath(); ctx.ellipse(s*.5,s*.6,s*.22,s*.28,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#1a4a7a'; ctx.fillRect(s*.4,s*.6,s*.2,s*.18);
-    ctx.fillStyle = '#888'; ctx.fillRect(s*.42,s*.28,s*.16,s*.14);
-    ctx.fillStyle = '#fff5'; ctx.fillRect(s*.4,s*.42,s*.08,s*.2);
-  }
-
-  else if (type === 'sword') {
-    ctx.fillStyle = '#c0c0c0'; ctx.fillRect(s*.46,s*.1,s*.08,s*.62);
-    ctx.fillStyle = '#c8a84b'; ctx.fillRect(s*.3,s*.42,s*.4,s*.08);
-    ctx.fillStyle = '#7a4a1a'; ctx.fillRect(s*.44,s*.7,s*.12,s*.2);
-    ctx.fillStyle = '#e0e0e0'; ctx.fillRect(s*.48,s*.1,s*.04,s*.56);
-  }
-
-  else if (type === 'shield') {
-    ctx.fillStyle = '#c8a84b';
-    ctx.beginPath(); ctx.moveTo(s*.5,s*.85); ctx.lineTo(s*.18,s*.3); ctx.lineTo(s*.5,s*.15); ctx.lineTo(s*.82,s*.3); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#8a6a1a';
-    ctx.beginPath(); ctx.moveTo(s*.5,s*.78); ctx.lineTo(s*.24,s*.34); ctx.lineTo(s*.5,s*.22); ctx.lineTo(s*.76,s*.34); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#c8a84b'; ctx.beginPath(); ctx.arc(s*.5,s*.5,s*.08,0,Math.PI*2); ctx.fill();
-  }
+  // shine
+  ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(b.r+8,-2); ctx.lineTo(b.r+SWORD_LEN-4,-1); ctx.stroke();
 
   ctx.restore();
 }
 
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 12 — RYSOWANIE KAFELKÓW (podłoga i ściana)
-// ═══════════════════════════════════════════════════════════
-function drawTile(type, x, y) {
-  if (type === 1) { // podłoga
-    ctx.fillStyle = '#1e1a12';
-    ctx.fillRect(x,y,TILE,TILE);
-    ctx.strokeStyle = '#28241a';
-    ctx.lineWidth = 0.5;
-    ctx.strokeRect(x+1,y+1,TILE-2,TILE-2);
-    ctx.fillStyle = 'rgba(255,255,200,0.015)';
-    ctx.fillRect(x+2,y+2,TILE-4,TILE-4);
-  } else if (type === 0) { // ściana
-    ctx.fillStyle = '#0d0b08';
-    ctx.fillRect(x,y,TILE,TILE);
-    ctx.fillStyle = '#181410';
-    ctx.fillRect(x+2,y+2,TILE-4,12);
-    ctx.fillRect(x+2,y+18,TILE-4,12);
-    ctx.fillRect(x+2,y+34,TILE-4,12);
-    ctx.strokeStyle = '#0a0806';
-    ctx.lineWidth=1;
-    ctx.strokeRect(x,y,TILE,TILE);
-  }
+function drawBowIndicator(ctx, b){
+  // small bow icon above ball
+  ctx.save();
+  ctx.translate(b.x, b.y - b.r - 12);
+  ctx.strokeStyle = '#c9a227';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0,0,8, -Math.PI*0.6, Math.PI*0.6);
+  ctx.stroke();
+  // string
+  ctx.strokeStyle = '#e8e8c0';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, -6.8); ctx.lineTo(0, 6.8);
+  ctx.stroke();
+  ctx.restore();
 }
 
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 13 — DANE POKOJÓW: POKÓJ 0 I 1
-// ═══════════════════════════════════════════════════════════
-const ROOMS = [
-  { // 0 — pokój startowy
-    map: [
-      [0,0,0,0,0,0,0,0,0,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,1],
-      [0,1,1,1,1,1,1,1,1,1],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,0,0,0,0,0,0,0,0,0],
-    ],
-    exits: { e: 1 },
-    enemies: [
-      { type:'slime', col:6, row:3, hp:30, maxHp:30, def:2, atk:8, name:'Śluz', reward:'potion_hp' }
-    ],
-    items: [
-      { type:'chest', col:2, row:2, contains:'sword', opened:false }
-    ],
-    visited: false
-  },
-  { // 1 — korytarz
-    map: [
-      [0,0,0,0,0,0,0,0,0,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [1,1,1,1,1,1,1,1,1,1],
-      [1,1,1,1,1,1,1,1,1,1],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,0,0,1,1,1,1,0,0,0],
-      [0,0,0,1,1,1,1,0,0,0],
-    ],
-    exits: { w: 0, e: 2, s: 3 },
-    enemies: [
-      { type:'skeleton', col:5, row:3, hp:50, maxHp:50, def:4, atk:12, name:'Szkielet', reward:'key' },
-      { type:'skeleton', col:3, row:6, hp:40, maxHp:40, def:3, atk:10, name:'Szkielet', reward:'potion_hp' }
-    ],
-    items: [
-      { type:'potion_hp', col:7, row:7, collected:false },
-      { type:'key', col:2, row:2, collected:false }
-    ],
-    visited: false
-  },
+// ── END GAME ──
+function endGame(result){
+  if(!gameRunning) return;
+  gameRunning = false;
+  cancelAnimationFrame(animFrame);
 
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 14 — DANE POKOJÓW: POKÓJ 2 I 3 (BOSS)
-// ═══════════════════════════════════════════════════════════
-  { // 2 — pokój wschodni
-    map: [
-      [0,0,0,0,0,0,0,0,0,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [1,1,1,1,1,1,1,1,1,0],
-      [1,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,0,0,0,0,0,0,0,0,0],
-    ],
-    exits: { w: 1 },
-    enemies: [
-      { type:'wizard', col:5, row:4, hp:60, maxHp:60, def:6, atk:18, name:'Czarownik', reward:'shield' }
-    ],
-    items: [
-      { type:'chest', col:7, row:7, contains:'potion_mp', opened:false }
-    ],
-    visited: false
-  },
-  { // 3 — pokój południowy (boss)
-    map: [
-      [0,0,0,1,1,1,1,0,0,0],
-      [0,0,0,1,1,1,1,0,0,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,0,0,0,0,0,0,0,0,0],
-    ],
-    exits: { n: 1 },
-    enemies: [
-      { type:'wizard', col:4, row:5, hp:100, maxHp:100, def:8, atk:22, name:'Arcyczarownik', reward:'potion_mp' }
-    ],
-    items: [
-      { type:'chest', col:8, row:8, contains:'potion_hp', opened:false }
-    ],
-    visited: false,
-    boss: true
-  }
-];
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 15 — STAN GRACZA I DEFINICJA ATAKÓW
-// ═══════════════════════════════════════════════════════════
-const player = {
-  col: 2, row: 5,
-  hp: 100, maxHp: 100,
-  mp: 50, maxMp: 50,
-  atk: 15, def: 5,
-  inventory: [],
-  currentRoom: 0
-};
-
-const ATTACKS = [
-  { id:0, name:'Silny cios',       mpCost:0,  dmgMult:1.4, defDebuff:0, desc:'Potężne uderzenie.' },
-  { id:1, name:'Przebicie tarczy', mpCost:8,  dmgMult:0.9, defDebuff:4, desc:'Osłabia obronę wroga o 4.' },
-  { id:2, name:'Magiczny cios',    mpCost:14, dmgMult:1.8, defDebuff:0, desc:'Ignoruje 50% obrony wroga.' },
-];
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 16 — GLOBALNY STAN GRY I LOG WIADOMOŚCI
-// ═══════════════════════════════════════════════════════════
-let state = 'explore'; // 'explore' | 'combat' | 'gameover' | 'win'
-let currentEnemy = null;
-let combatLog = [];
-let selectedAttack = 0;
-let playerTurn = true;
-let combatAnim = null;
-let shakeFrame = 0;
-let msgLog = [];
-
-function addMsg(msg) {
-  msgLog.unshift(msg);
-  if (msgLog.length > 5) msgLog.pop();
-  const el = document.getElementById('msgLog');
-  el.innerHTML = msgLog.map((m,i) =>
-    `<div class="${i===0?'msg-new':''}">${m}</div>`
-  ).join('');
-}
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 17 — INPUT: OBSŁUGA KLAWIATURY
-// ═══════════════════════════════════════════════════════════
-const keys = {};
-document.addEventListener('keydown', e => {
-  const k = e.key.toLowerCase();
-  if (!keys[k]) {
-    keys[k] = true;
-    handleInput(k);
-  }
-});
-document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
-
-function handleInput(k) {
-  if (state === 'explore') handleExploreInput(k);
-  else if (state === 'combat') handleCombatInput(k);
-  else if (state === 'gameover' || state === 'win') {
-    if (k === 'enter' || k === ' ') resetGame();
-  }
-}
-
-function handleExploreInput(k) {
-  let dc=0, dr=0;
-  if (k==='arrowup'||k==='w') dr=-1;
-  else if (k==='arrowdown'||k==='s') dr=1;
-  else if (k==='arrowleft'||k==='a') dc=-1;
-  else if (k==='arrowright'||k==='d') dc=1;
-  else if (k==='e'||k==='enter') { tryInteract(); return; }
-  if (dc!==0||dr!==0) tryMove(dc,dr);
-}
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 18 — RUCH GRACZA I ZMIANA POKOJU
-// ═══════════════════════════════════════════════════════════
-function tryMove(dc, dr) {
-  const room = ROOMS[player.currentRoom];
-  const nc = player.col + dc;
-  const nr = player.row + dr;
-
-  if (nc < 0 || nc >= COLS || nr < 0 || nr >= ROWS) {
-    if (dc===1  && room.exits.e !== undefined) changeRoom(room.exits.e, 'e');
-    else if (dc===-1 && room.exits.w !== undefined) changeRoom(room.exits.w, 'w');
-    else if (dr===1  && room.exits.s !== undefined) changeRoom(room.exits.s, 's');
-    else if (dr===-1 && room.exits.n !== undefined) changeRoom(room.exits.n, 'n');
-    return;
-  }
-
-  if (room.map[nr][nc] === 0) return;
-
-  const enemy = room.enemies.find(e => e.col===nc && e.row===nr && e.hp>0);
-  if (enemy) {
-    addMsg(`Napotkałeś ${enemy.name}! Wejdź w niego by walczyć (ENTER).`);
-    player.col = nc; player.row = nr - dr;
-    return;
-  }
-
-  player.col = nc;
-  player.row = nr;
-  checkPickup();
-}
-
-function changeRoom(idx, dir) {
-  player.currentRoom = idx;
-  const room = ROOMS[idx];
-  room.visited = true;
-  if (dir==='e') { player.col=0;      player.row=4; }
-  else if (dir==='w') { player.col=COLS-1; player.row=4; }
-  else if (dir==='s') { player.col=4;      player.row=0; }
-  else if (dir==='n') { player.col=4;      player.row=ROWS-1; }
-  addMsg(`Wchodzisz do pokoju ${idx+1}${room.boss?' — BOSS!':''}.`);
-  document.getElementById('roomVal').textContent = idx+1;
-}
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 19 — ZBIERANIE PRZEDMIOTÓW I INTERAKCJA ZE SKRZYNIĄ
-// ═══════════════════════════════════════════════════════════
-function checkPickup() {
-  const room = ROOMS[player.currentRoom];
-  room.items.forEach(item => {
-    if (item.col === player.col && item.row === player.row) {
-      if (item.type !== 'chest' && !item.collected) {
-        item.collected = true;
-        player.inventory.push(item.type);
-        applyItem(item.type);
-        addMsg(`Zebrałeś: ${itemName(item.type)}!`);
-        updateSidebar();
-      }
-    }
-  });
-}
-
-function tryInteract() {
-  const room = ROOMS[player.currentRoom];
-  const dirs = [{c:0,r:-1},{c:0,r:1},{c:-1,r:0},{c:1,r:0}];
-
-  for (const d of dirs) {
-    const enemy = room.enemies.find(e =>
-      e.col === player.col+d.c && e.row === player.row+d.r && e.hp>0
-    );
-    if (enemy) { startCombat(enemy); return; }
-  }
-
-  const onTile = room.enemies.find(e => e.col===player.col && e.row===player.row && e.hp>0);
-  if (onTile) { startCombat(onTile); return; }
-
-  for (const d of [{c:0,r:0},...dirs]) {
-    const chest = room.items.find(i =>
-      i.type==='chest' && i.col===player.col+d.c && i.row===player.row+d.r && !i.opened
-    );
-    if (chest) {
-      chest.opened = true;
-      player.inventory.push(chest.contains);
-      applyItem(chest.contains);
-      addMsg(`Otwarłeś skrzynię! Znalazłeś: ${itemName(chest.contains)}!`);
-      updateSidebar();
-      return;
-    }
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 20 — EFEKTY PRZEDMIOTÓW I NAZWY
-// ═══════════════════════════════════════════════════════════
-function applyItem(type) {
-  if (type === 'potion_hp') {
-    const heal = Math.floor(player.maxHp * 0.4);
-    player.hp = Math.min(player.maxHp, player.hp + heal);
-    addMsg(`Leczysz ${heal} HP!`);
-  } else if (type === 'potion_mp') {
-    const heal = Math.floor(player.maxMp * 0.5);
-    player.mp = Math.min(player.maxMp, player.mp + heal);
-    addMsg(`Regenerujesz ${heal} MP!`);
-  } else if (type === 'sword') {
-    player.atk += 10;
-    addMsg(`Miecz! ATK +10`);
-  } else if (type === 'shield') {
-    player.def += 6;
-    addMsg(`Tarcza! DEF +6`);
-  }
-}
-
-function itemName(type) {
-  const names = {
-    sword:     '⚔ Miecz',
-    shield:    '🛡 Tarcza',
-    key:       '🗝 Klucz',
-    potion_hp: '❤ Mikstura HP',
-    potion_mp: '💧 Mikstura MP'
-  };
-  return names[type] || type;
-}
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 21 — WALKA: START I INPUT BOJOWY
-// ═══════════════════════════════════════════════════════════
-function startCombat(enemy) {
-  state = 'combat';
-  currentEnemy = enemy;
-  currentEnemy._defDebuff = 0;
-  selectedAttack = 0;
-  playerTurn = true;
-  combatLog = [`⚔ Walka z ${enemy.name}!`];
-  addMsg(`⚔ Walka z ${enemy.name}!`);
-}
-
-function handleCombatInput(k) {
-  if (!playerTurn) return;
-  if (k==='1') selectedAttack=0;
-  else if (k==='2') selectedAttack=1;
-  else if (k==='3') selectedAttack=2;
-  else if (k==='enter'||k==='e') doPlayerAttack();
-  else if (k==='arrowup'||k==='w')   selectedAttack = (selectedAttack-1+ATTACKS.length) % ATTACKS.length;
-  else if (k==='arrowdown'||k==='s') selectedAttack = (selectedAttack+1) % ATTACKS.length;
-}
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 22 — WALKA: ATAK GRACZA
-// ═══════════════════════════════════════════════════════════
-function doPlayerAttack() {
-  const atk = ATTACKS[selectedAttack];
-  if (player.mp < atk.mpCost) { combatLog.unshift('❌ Za mało MP!'); return; }
-  player.mp -= atk.mpCost;
-
-  let dmg;
-  if (atk.id === 2) {
-    const effectiveDef = Math.max(0, (currentEnemy.def + currentEnemy._defDebuff) * 0.5);
-    dmg = Math.max(1, Math.floor(player.atk * atk.dmgMult - effectiveDef));
-  } else {
-    const effectiveDef = Math.max(0, currentEnemy.def + currentEnemy._defDebuff);
-    dmg = Math.max(1, Math.floor(player.atk * atk.dmgMult - effectiveDef));
-  }
-
-  currentEnemy.hp -= dmg;
-  combatLog.unshift(`Użyłeś ${atk.name} → ${dmg} obrażeń!`);
-
-  if (atk.defDebuff > 0) {
-    currentEnemy._defDebuff -= atk.defDebuff;
-    combatLog.unshift(`Obrona ${currentEnemy.name} osłabiona o ${atk.defDebuff}!`);
-  }
-
-  shakeFrame = 12; combatAnim = 'enemy';
-
-  if (currentEnemy.hp <= 0) {
-    combatLog.unshift(`✓ ${currentEnemy.name} pokonany!`);
-    addMsg(`✓ ${currentEnemy.name} pokonany!`);
-    if (currentEnemy.reward) {
-      const room = ROOMS[player.currentRoom];
-      room.items.push({ type:currentEnemy.reward, col:currentEnemy.col, row:currentEnemy.row, collected:false });
-      combatLog.unshift(`Upuścił: ${itemName(currentEnemy.reward)}`);
-    }
-    setTimeout(() => { state='explore'; currentEnemy=null; checkWin(); updateSidebar(); }, 800);
-    updateSidebar();
-    return;
-  }
-
-  playerTurn = false;
-  setTimeout(doEnemyAttack, 900);
-  updateSidebar();
-}
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 23 — WALKA: ATAK WROGA I WARUNEK WYGRANEJ
-// ═══════════════════════════════════════════════════════════
-function doEnemyAttack() {
-  if (!currentEnemy || currentEnemy.hp <= 0) return;
-  const dmg = Math.max(1, currentEnemy.atk - player.def + (currentEnemy._defDebuff||0));
-  player.hp -= dmg;
-  combatLog.unshift(`${currentEnemy.name} atakuje → ${dmg} obrażeń!`);
-
-  shakeFrame = 12; combatAnim = 'player';
-
-  if (player.hp <= 0) {
-    player.hp = 0;
-    state = 'gameover';
-    combatLog.unshift('☠ Zostałeś pokonany...');
-    addMsg('☠ Zostałeś pokonany!');
-    updateSidebar();
-    return;
-  }
-  playerTurn = true;
-  updateSidebar();
-}
-
-function checkWin() {
-  const allDead = ROOMS.every(r => r.enemies.every(e => e.hp<=0));
-  if (allDead) { state='win'; addMsg('🏆 Wszystkie pokoje wyczyszczone! Wygrałeś!'); }
-}
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 24 — AKTUALIZACJA SIDEBAR (HP, MP, EKWIPUNEK)
-// ═══════════════════════════════════════════════════════════
-function updateSidebar() {
-  document.getElementById('hpVal').textContent = `${Math.max(0,player.hp)}/${player.maxHp}`;
-  document.getElementById('mpVal').textContent = `${Math.max(0,player.mp)}/${player.maxMp}`;
-  document.getElementById('hpBar').style.width  = `${Math.max(0,player.hp)/player.maxHp*100}%`;
-  document.getElementById('mpBar').style.width  = `${Math.max(0,player.mp)/player.maxMp*100}%`;
-  document.getElementById('atkVal').textContent = player.atk;
-  document.getElementById('defVal').textContent = player.def;
-
-  const inv = document.getElementById('inventoryList');
-  if (player.inventory.length === 0) {
-    inv.innerHTML = '<span style="color:#4a4038">Brak przedmiotów</span>';
-  } else {
-    const counts = {};
-    player.inventory.forEach(i => counts[i]=(counts[i]||0)+1);
-    inv.innerHTML = Object.entries(counts).map(([k,v])=>
-      `<div class="item">${itemName(k)}${v>1?` x${v}`:''}</div>`
-    ).join('');
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 25 — RENDER: EKSPLORACJA
-// ═══════════════════════════════════════════════════════════
-function renderExplore() {
-  const room = ROOMS[player.currentRoom];
-
-  for (let r=0;r<ROWS;r++)
-    for (let c=0;c<COLS;c++)
-      drawTile(room.map[r][c], c*TILE, r*TILE);
-
-  room.items.forEach(item => {
-    if (item.collected || item.opened === true) {
-      if (item.type==='chest') drawSprite('chest_open', item.col*TILE, item.row*TILE);
+  setTimeout(()=>{
+    const t = document.getElementById('result-title');
+    const s = document.getElementById('result-sub');
+    if(result==='win'){
+      t.textContent='ZWYCIĘSTWO!'; t.className='result-title win';
+      s.textContent='Wróg pokonany • Świetna walka!';
+    } else if(result==='lose'){
+      t.textContent='PORAŻKA'; t.className='result-title lose';
+      s.textContent='Spróbuj jeszcze raz…';
     } else {
-      drawSprite(item.type==='chest'?'chest':item.type, item.col*TILE, item.row*TILE);
+      t.textContent='REMIS'; t.className='result-title draw';
+      s.textContent='Oboje polegli jednocześnie';
     }
-  });
-
-  room.enemies.forEach(enemy => {
-    if (enemy.hp <= 0) return;
-    const type = enemy.type==='slime'?'enemy_slime':enemy.type==='skeleton'?'enemy_skeleton':'enemy_wizard';
-    drawSprite(type, enemy.col*TILE, enemy.row*TILE);
-    const bw = TILE-6;
-    ctx.fillStyle='#3a0a0a'; ctx.fillRect(enemy.col*TILE+3, enemy.row*TILE-8, bw, 5);
-    ctx.fillStyle='#c0392b'; ctx.fillRect(enemy.col*TILE+3, enemy.row*TILE-8, bw*(enemy.hp/enemy.maxHp), 5);
-  });
-
-  const exits = room.exits;
-  ctx.fillStyle='#c8a84b88'; ctx.font='bold 20px monospace'; ctx.textAlign='center';
-  if (exits.e) ctx.fillText('▶', COLS*TILE-12, (ROWS/2)*TILE);
-  if (exits.w) ctx.fillText('◀', 12, (ROWS/2)*TILE);
-  if (exits.s) ctx.fillText('▼', (COLS/2)*TILE, ROWS*TILE-8);
-  if (exits.n) ctx.fillText('▲', (COLS/2)*TILE, 18);
-
-  let px = player.col*TILE, py = player.row*TILE;
-  if (combatAnim==='player' && shakeFrame>0) { px += Math.sin(shakeFrame)*5; }
-  drawSprite('player', px, py);
+    showScreen('result-screen');
+  }, 800);
 }
 
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 26 — RENDER: WALKA — TŁO, WRÓG, GRACZ
-// ═══════════════════════════════════════════════════════════
-function renderCombat() {
-  ctx.fillStyle='#0a0a0f'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  for(let y=0;y<canvas.height;y+=4){
-    ctx.fillStyle='rgba(0,0,0,0.15)'; ctx.fillRect(0,y,canvas.width,2);
-  }
-  ctx.fillStyle='#16120e'; ctx.fillRect(0,0,canvas.width,280);
-  for(let c=0;c<COLS;c++) for(let r=0;r<6;r++) drawTile(1,c*TILE,r*TILE);
-
-  const e = currentEnemy;
-  const etype = e.type==='slime'?'enemy_slime':e.type==='skeleton'?'enemy_skeleton':'enemy_wizard';
-
-  let ex = 260, ey = 40;
-  if (combatAnim==='enemy' && shakeFrame>0) ex += Math.sin(shakeFrame*0.8)*7;
-  ctx.save(); ctx.scale(3,3); drawSprite(etype, ex/3, ey/3, 1); ctx.restore();
-
-  ctx.fillStyle='#1a0808'; ctx.fillRect(240,180,200,14);
-  ctx.fillStyle='#c0392b'; ctx.fillRect(240,180,200*(e.hp/e.maxHp),14);
-  ctx.strokeStyle='#3a1010'; ctx.lineWidth=1; ctx.strokeRect(240,180,200,14);
-  ctx.fillStyle='#e0d8c0'; ctx.font='11px Courier New'; ctx.textAlign='left';
-  ctx.fillText(`${e.name}  ${Math.max(0,e.hp)}/${e.maxHp}`, 244, 192);
-  if (e._defDebuff < 0) {
-    ctx.fillStyle='#e67e22';
-    ctx.fillText(`DEF ${e.def + e._defDebuff} (osłabiony)`, 244, 208);
-  }
-
-  let ppx = 60, ppy = 100;
-  if (combatAnim==='player' && shakeFrame>0) ppx += Math.sin(shakeFrame)*5;
-  ctx.save(); ctx.scale(2,2); drawSprite('player', ppx/2, ppy/2, 1); ctx.restore();
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 27 — RENDER: WALKA — PASKI HP/MP, MENU ATAKÓW, LOG
-// ═══════════════════════════════════════════════════════════
-  ctx.fillStyle='#1a0808'; ctx.fillRect(30,210,160,10);
-  ctx.fillStyle='#c0392b'; ctx.fillRect(30,210,160*(player.hp/player.maxHp),10);
-  ctx.fillStyle='#08081a'; ctx.fillRect(30,224,160,10);
-  ctx.fillStyle='#2980b9'; ctx.fillRect(30,224,160*(player.mp/player.maxMp),10);
-  ctx.fillStyle='#e0d8c0'; ctx.font='10px Courier New'; ctx.textAlign='left';
-  ctx.fillText(`HP ${Math.max(0,player.hp)}/${player.maxHp}`,196,220);
-  ctx.fillText(`MP ${Math.max(0,player.mp)}/${player.maxMp}`,196,234);
-
-  ctx.strokeStyle='#3a3020'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(0,242); ctx.lineTo(480,242); ctx.stroke();
-  ctx.fillStyle='#12100a'; ctx.fillRect(0,242,480,238);
-
-  ctx.fillStyle='#c8a84b'; ctx.font='bold 13px Courier New'; ctx.textAlign='left';
-  ctx.fillText('— ATAK —', 20, 265);
-
-  ATTACKS.forEach((atk,i) => {
-    const y = 285 + i*44;
-    const selected = i===selectedAttack;
-    if (selected) {
-      ctx.fillStyle='#2a2218'; ctx.fillRect(10,y-18,460,40);
-      ctx.strokeStyle='#c8a84b66'; ctx.lineWidth=1; ctx.strokeRect(10,y-18,460,40);
-    }
-    ctx.fillStyle = selected?'#e8d870':'#b0a888';
-    ctx.font = 'bold 12px Courier New';
-    ctx.fillText(`${i+1}. ${atk.name}`, 22, y);
-    ctx.fillStyle='#6a6050'; ctx.font='10px Courier New';
-    ctx.fillText(`MP:${atk.mpCost}  ${atk.desc}`, 22, y+14);
-  });
-
-  ctx.fillStyle='#c8a84b'; ctx.font='bold 11px Courier New';
-  ctx.fillText('LOG:', 310, 265);
-  combatLog.slice(0,6).forEach((l,i) => {
-    ctx.fillStyle = i===0?'#c8b87a':'#5a5040';
-    ctx.font='10px Courier New';
-    ctx.fillText(l.slice(0,22), 310, 283+i*17);
-  });
-
-  if (playerTurn) {
-    ctx.fillStyle='#4a8a4a'; ctx.font='11px Courier New'; ctx.textAlign='center';
-    ctx.fillText('ENTER / E — Atakuj    ↑↓ / 1-3 — Wybierz', 240, 472);
-  } else {
-    ctx.fillStyle='#8a4a1a';
-    ctx.fillText('Tura wroga...', 240, 472);
-  }
+function rematch(){
+  document.getElementById('countdown-overlay').style.display='flex';
+  document.getElementById('countdown-num').classList.remove('show');
+  showScreen('arena-screen');
+  initBalls();
+  drawStatic();
+  setTimeout(()=>runCountdown(3), 200);
 }
 
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 28 — EKRANY KOŃCOWE: GAME OVER I WYGRANA
-// ═══════════════════════════════════════════════════════════
-function renderGameOver() {
-  ctx.fillStyle='rgba(0,0,0,0.85)'; ctx.fillRect(0,0,480,480);
-  ctx.fillStyle='#c0392b'; ctx.font='bold 48px Courier New'; ctx.textAlign='center';
-  ctx.fillText('GAME OVER', 240, 200);
-  ctx.fillStyle='#b0a888'; ctx.font='16px Courier New';
-  ctx.fillText('Zostałeś pokonany w lochach...', 240, 250);
-  ctx.fillStyle='#6a6050'; ctx.font='12px Courier New';
-  ctx.fillText('ENTER — zagraj ponownie', 240, 300);
+function goMenu(){
+  showScreen('menu-screen');
+  playerWeapon = null;
+  document.querySelectorAll('.weapon-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('btn-fight').classList.remove('visible');
 }
-
-function renderWin() {
-  ctx.fillStyle='rgba(0,0,0,0.85)'; ctx.fillRect(0,0,480,480);
-  ctx.fillStyle='#c8a84b'; ctx.font='bold 40px Courier New'; ctx.textAlign='center';
-  ctx.fillText('WYGRAŁEŚ!', 240, 190);
-  ctx.fillStyle='#b0a888'; ctx.font='16px Courier New';
-  ctx.fillText('Wszystkich wrogów pokonano!', 240, 240);
-  ctx.fillStyle='#6a6050'; ctx.font='12px Courier New';
-  ctx.fillText('ENTER — zagraj ponownie', 240, 290);
-}
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 29 — RESET GRY
-// ═══════════════════════════════════════════════════════════
-function resetGame() {
-  player.col=2; player.row=5; player.hp=100; player.mp=50;
-  player.atk=15; player.def=5; player.inventory=[]; player.currentRoom=0;
-  state='explore'; currentEnemy=null; combatLog=[]; selectedAttack=0; playerTurn=true;
-  msgLog=[];
-
-  ROOMS.forEach(r => {
-    r.enemies.forEach(e => { e.hp = e.maxHp; e._defDebuff = 0; });
-    r.items.forEach(i => {
-      i.collected = false;
-      if ('opened' in i) i.opened = false;
-    });
-    r.items = r.items.filter(i => !('collected' in i && i._drop));
-    r.visited = false;
-  });
-
-  updateSidebar();
-  document.getElementById('msgLog').innerHTML='';
-}
-
-// ═══════════════════════════════════════════════════════════
-// SEKCJA 30 — GŁÓWNA PĘTLA GRY I INICJALIZACJA
-// ═══════════════════════════════════════════════════════════
-function loop() {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  if (shakeFrame>0) shakeFrame--;
-  else combatAnim=null;
-
-  if (state==='explore')  renderExplore();
-  else if (state==='combat')   renderCombat();
-  else if (state==='gameover') { renderExplore(); renderGameOver(); }
-  else if (state==='win')      { renderExplore(); renderWin(); }
-
-  requestAnimationFrame(loop);
-}
-
-ROOMS[0].visited = true;
-updateSidebar();
-addMsg('Witaj w lochu! Użyj WASD by się poruszać.');
-addMsg('Podejdź do wroga i naciśnij E by walczyć.');
-loop();
 </script>
 </body>
 </html>
