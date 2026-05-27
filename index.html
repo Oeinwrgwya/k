@@ -376,7 +376,7 @@ function damage(b){
 function shootArrow(from,to,owner){
   const dx=to.x-from.x,dy=to.y-from.y;
   const d=Math.sqrt(dx*dx+dy*dy)||1;
-  const spd=3000;
+  const spd=320;
   arrows.push({x:from.x+(dx/d)*(from.r+10),y:from.y+(dy/d)*(from.r+10),vx:(dx/d)*spd,vy:(dy/d)*spd,owner,life:5});
 }
 
