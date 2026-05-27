@@ -233,8 +233,20 @@ function update(dt){
   if(player.weapon==='bow') player.aimAngle=Math.atan2(enemy.y-player.y,enemy.x-player.x);
   if(enemy.weapon==='bow')  enemy.aimAngle =Math.atan2(player.y-enemy.y,player.x-enemy.x);
 
-  if(player.weapon==='bow'){ arrowTimers.player+=dt; if(arrowTimers.player>=ARROW_INTERVAL){arrowTimers.player=0;shootArrow(player,enemy,'player');} }
-  if(enemy.weapon==='bow'){  arrowTimers.enemy+=dt;  if(arrowTimers.enemy>=ARROW_INTERVAL) {arrowTimers.enemy=0;shootArrow(enemy,player,'enemy');} }
+  if(player.weapon==='bow'){
+  arrowTimers.player+=dt;
+  if(arrowTimers.player>=ARROW_INTERVAL){ arrowTimers.player=0; shootArrow(player,enemy,'player'); }
+  if(!arrowTimers.playerTriple) arrowTimers.playerTriple=3;
+  arrowTimers.playerTriple-=dt;
+  if(arrowTimers.playerTriple<=0){ arrowTimers.playerTriple=3; shootTriple(player,enemy,'player'); }
+}
+if(enemy.weapon==='bow'){
+  arrowTimers.enemy+=dt;
+  if(arrowTimers.enemy>=ARROW_INTERVAL){ arrowTimers.enemy=0; shootArrow(enemy,player,'enemy'); }
+  if(!arrowTimers.enemyTriple) arrowTimers.enemyTriple=3+Math.random();
+  arrowTimers.enemyTriple-=dt;
+  if(arrowTimers.enemyTriple<=0){ arrowTimers.enemyTriple=3+Math.random(); shootTriple(enemy,player,'enemy'); }
+}
 
   for(let i=arrows.length-1;i>=0;i--){
     const a=arrows[i];
@@ -378,6 +390,22 @@ function shootArrow(from,to,owner){
   const d=Math.sqrt(dx*dx+dy*dy)||1;
   const spd=320;
   arrows.push({x:from.x+(dx/d)*(from.r+10),y:from.y+(dy/d)*(from.r+10),vx:(dx/d)*spd,vy:(dy/d)*spd,owner,life:5});
+}
+
+  function shootTriple(from,to,owner){
+  const dx=to.x-from.x,dy=to.y-from.y;
+  const d=Math.sqrt(dx*dx+dy*dy)||1;
+  const spd=260;
+  [-0.28, 0, 0.28].forEach(offset=>{
+    const ang=Math.atan2(dy,dx)+offset;
+    arrows.push({
+      x:from.x+Math.cos(ang)*(from.r+10),
+      y:from.y+Math.sin(ang)*(from.r+10),
+      vx:Math.cos(ang)*spd,
+      vy:Math.sin(ang)*spd,
+      owner,life:5
+    });
+  });
 }
 
 // ── DRAW ──
