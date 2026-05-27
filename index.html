@@ -58,7 +58,7 @@
   /* ARENA */
   #arena-screen { flex-direction:column; gap:0; align-items:center; }
   #arena-canvas { display:block; }
-  .hp-row { width:600px; display:flex; justify-content:space-between; align-items:center; padding:8px 4px 6px; }
+  .hp-row { width:900px; display:flex; justify-content:space-between; align-items:center; padding:8px 4px 6px; }
   .hp-block { display:flex; flex-direction:column; gap:4px; }
   .hp-block.right { align-items:flex-end; }
   .hp-label { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--dim); }
@@ -121,8 +121,8 @@
     </div>
   </div>
   <div style="position:relative; line-height:0;">
-    <canvas id="arena-canvas" width="600" height="600"></canvas>
-    <canvas id="sword-canvas" width="600" height="600" style="position:absolute;top:0;left:0;pointer-events:none;"></canvas>
+    <canvas id="arena-canvas" width="900" height="600"></canvas>
+    <canvas id="sword-canvas" width="900" height="600" style="position:absolute;top:0;left:0;pointer-events:none;"></canvas>
   </div>
 </div>
 
@@ -135,7 +135,7 @@
 </div>
 
 <script>
-const W=600, H=600, R=22;
+const W=900, H=600, R=22;
 const MAX_HP=5;
 const SWORD_LEN=68; // 2x longer
 const SWORD_W=5;
