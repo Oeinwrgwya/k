@@ -236,16 +236,16 @@ function update(dt){
   if(player.weapon==='bow'){
   arrowTimers.player+=dt;
   if(arrowTimers.player>=ARROW_INTERVAL){ arrowTimers.player=0; shootArrow(player,enemy,'player'); }
-  if(!arrowTimers.playerTriple) arrowTimers.playerTriple=3;
+  if(!arrowTimers.playerTriple) arrowTimers.playerTriple=5;
   arrowTimers.playerTriple-=dt;
-  if(arrowTimers.playerTriple<=0){ arrowTimers.playerTriple=3; shootTriple(player,enemy,'player'); }
+  if(arrowTimers.playerTriple<=0){ arrowTimers.playerTriple=5; shootTriple(player,enemy,'player'); }
 }
 if(enemy.weapon==='bow'){
   arrowTimers.enemy+=dt;
   if(arrowTimers.enemy>=ARROW_INTERVAL){ arrowTimers.enemy=0; shootArrow(enemy,player,'enemy'); }
-  if(!arrowTimers.enemyTriple) arrowTimers.enemyTriple=3+Math.random();
+  if(!arrowTimers.enemyTriple) arrowTimers.enemyTriple=5+Math.random();
   arrowTimers.enemyTriple-=dt;
-  if(arrowTimers.enemyTriple<=0){ arrowTimers.enemyTriple=3+Math.random(); shootTriple(enemy,player,'enemy'); }
+  if(arrowTimers.enemyTriple<=0){ arrowTimers.enemyTriple=5+Math.random(); shootTriple(enemy,player,'enemy'); }
 }
 
   for(let i=arrows.length-1;i>=0;i--){
