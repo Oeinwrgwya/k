@@ -181,7 +181,7 @@ function makeSword(){
 
 function initBalls(){
   enemyWeapon=playerWeapon==='sword'?'bow':'sword';
-  const spd=150;
+  const spd=130;
   function rv(){ const a=Math.random()*Math.PI*2; return {vx:Math.cos(a)*spd,vy:Math.sin(a)*spd}; }
   const pv=rv(), ev=rv();
 
