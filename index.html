@@ -67,6 +67,48 @@
   #hp-bar-player { background:var(--blue); }
   #hp-bar-enemy  { background:var(--red); }
 
+  /* UPGRADE SCREEN */
+  #upgrade-screen { flex-direction:column; gap:24px; align-items:center; }
+  .upgrade-title { font-size:28px; font-weight:700; letter-spacing:3px; color:var(--gold); text-transform:uppercase; text-align:center; }
+  .upgrade-sub { font-size:12px; color:var(--dim); letter-spacing:2px; text-transform:uppercase; }
+  .upgrade-grid { display:flex; gap:24px; justify-content:center; }
+  .upgrade-card {
+    width:200px; background:var(--panel); border:2px solid var(--border);
+    border-radius:12px; padding:24px 16px 20px; cursor:pointer;
+    text-align:center; transition:border-color .15s,background .15s,transform .15s;
+    position:relative; user-select:none;
+  }
+  .upgrade-card:hover { border-color:#555570; transform:translateY(-2px); }
+  .upgrade-card.selected { border-color:var(--gold); background:#1b1708; }
+  .upgrade-icon { font-size:48px; display:block; margin-bottom:12px; }
+  .upgrade-name { font-size:14px; font-weight:600; color:var(--text); margin-bottom:6px; letter-spacing:1px; }
+  .upgrade-card.selected .upgrade-name { color:var(--gold); }
+  .upgrade-desc { font-size:11px; color:var(--dim); line-height:1.5; }
+  .upgrade-badge {
+    position:absolute; top:8px; right:8px; width:20px; height:20px;
+    background:var(--gold); border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; color:#000; font-weight:700; opacity:0; transition:opacity .15s;
+  }
+  .upgrade-card.selected .upgrade-badge { opacity:1; }
+  .btn-upgrade {
+    font-size:14px; letter-spacing:3px; padding:12px 52px;
+    background:var(--gold); border:none; border-radius:7px;
+    color:#1a0f00; cursor:pointer; font-weight:600;
+    transition:opacity .2s,transform .15s; opacity:0; pointer-events:none; text-transform:uppercase;
+  }
+  .btn-upgrade.visible { opacity:1; pointer-events:all; }
+  .btn-upgrade:hover { transform:scale(1.04); }
+
+  /* stat pills */
+  .upgrade-stats { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; margin-top:8px; }
+  .stat-pill {
+    font-size:10px; padding:2px 8px; border-radius:20px;
+    letter-spacing:.5px; font-weight:600;
+  }
+  .stat-good { background:rgba(76,201,240,.15); color:#4cc9f0; border:1px solid rgba(76,201,240,.3); }
+  .stat-bad  { background:rgba(230,57,70,.15);  color:#e63946; border:1px solid rgba(230,57,70,.3); }
+
   /* RESULT */
   #result-screen { flex-direction:column; gap:20px; align-items:center; }
   .result-title { font-size:clamp(28px,5vw,52px); font-weight:700; letter-spacing:3px; text-align:center; }
@@ -126,6 +168,14 @@
   </div>
 </div>
 
+<!-- UPGRADE -->
+<div class="screen hidden" id="upgrade-screen">
+  <div class="upgrade-title">Upgrade Your Weapon</div>
+  <div class="upgrade-sub">Choose your path</div>
+  <div class="upgrade-grid" id="upgrade-grid"></div>
+  <button class="btn-upgrade" id="btn-upgrade" onclick="applyUpgrade()">Upgrade & Fight</button>
+</div>
+
 <!-- RESULT -->
 <div class="screen hidden" id="result-screen">
   <div class="result-title" id="result-title">Victory!</div>
@@ -138,19 +188,59 @@
 const W=900, H=600, R=22;
 const MAX_HP_SWORD=10;
 const MAX_HP_BOW=8;
-const SWORD_LEN=68; // 2x longer
+const SWORD_LEN=68;
 const SWORD_W=5;
 const ARROW_INTERVAL=1.8;
 const WALL_BOUNCE=0.95;
 const PUSH_SCALE=180;
-
-// Sword states: 'rest' | 'windup' | 'slash' | 'recover'
-// rest angle = behind ball (away from enemy) + slight downward offset
-const SWORD_ATTACK_DIST = SWORD_LEN + R + R + 10; // trigger distance
+const SWORD_ATTACK_DIST = SWORD_LEN + R + R + 10;
 
 let playerWeapon=null, enemyWeapon=null;
+let playerUpgrade=null; // 'curved' | 'wide' | 'wide_bow' | 'dark_bow'
+let roundCount=0;
+let selectedUpgradeId=null;
 let gameRunning=false, animFrame=null, lastTime=0;
 let player, enemy, arrows, arrowTimers, lastHit;
+
+// ── upgrade definitions ──
+const UPGRADES = {
+  sword: [
+    {
+      id:'curved',
+      name:'Curved Blade',
+      icon:'🗡️',
+      desc:'A crescent blade — dashes are much more powerful, allowing aggressive lunges across the arena.',
+      stats:[{t:'Dash +80%',g:true},{t:'Damage normal',g:true}],
+      dashMult:1.8, damageMult:1, swordLen:68
+    },
+    {
+      id:'wide',
+      name:'Broad Sword',
+      icon:'⚔️',
+      desc:'A heavy, wide blade — each hit deals double damage, but the added weight slightly slows your dashes.',
+      stats:[{t:'Damage ×2',g:true},{t:'Dash -25%',g:false}],
+      dashMult:0.75, damageMult:2, swordLen:80
+    }
+  ],
+  bow: [
+    {
+      id:'wide_bow',
+      name:'Wide Bow',
+      icon:'🏹',
+      desc:'A broader limb gives explosive draw speed — fires twice as fast, no spread shot.',
+      stats:[{t:'Fire rate ×2',g:true},{t:'No triple shot',g:false}],
+      fireRateMult:2, tripleShot:false, spreadAngles:[]
+    },
+    {
+      id:'dark_bow',
+      name:'Dark Bow',
+      icon:'🪃',
+      desc:'An ancient dark bow — fires 4 side arrows in a tight fan around the main shot.',
+      stats:[{t:'5 arrows per salvo',g:true},{t:'Fire rate normal',g:true}],
+      fireRateMult:1, tripleShot:true, spreadAngles:[-0.42,-0.21,0.21,0.42]
+    }
+  ]
+};
 
 function selectWeapon(w){
   playerWeapon=w;
@@ -165,38 +255,31 @@ function showScreen(id){
 
 function makeSword(){
   return {
-    state: 'rest',      // rest | slash | recover
-    angle: 0,           // current drawn angle (world space)
-    restAngle: 0,       // computed each frame: behind ball + slight down
-    slashAngle: 0,      // target of slash (toward enemy)
-    timer: 0,
-    hitDealt: false,
-    // durations
-    slashDur: 0.13,
-    recoverDur: 0.25,
-    cooldown: 0,
-    dashTimer: 1.0 + Math.random(), // stagger so both don't dash simultaneously
+    state:'rest', angle:0, restAngle:0, slashAngle:0,
+    timer:0, hitDealt:false,
+    slashDur:0.13, recoverDur:0.25, cooldown:0,
+    dashTimer:1.0+Math.random(),
   };
 }
 
+function getMaxHP(weapon){ return weapon==='bow'?MAX_HP_BOW:MAX_HP_SWORD; }
+
 function initBalls(){
   enemyWeapon=playerWeapon==='sword'?'bow':'sword';
-  const spd=130;
+  const spd=150;
   function rv(){ const a=Math.random()*Math.PI*2; return {vx:Math.cos(a)*spd,vy:Math.sin(a)*spd}; }
   const pv=rv(), ev=rv();
-
-  player={ x:130, y:H/2, vx:pv.vx, vy:pv.vy, r:R, weapon:playerWeapon, color:'#4cc9f0', alive:true, hp:playerWeapon==='bow'?MAX_HP_BOW:MAX_HP_SWORD, aimAngle:0, sword:makeSword() };
-  enemy ={ x:W-130, y:H/2, vx:ev.vx, vy:ev.vy, r:R, weapon:enemyWeapon,  color:'#e63946', alive:true, hp:enemyWeapon==='bow'?MAX_HP_BOW:MAX_HP_SWORD, aimAngle:Math.PI, sword:makeSword() };
-
+  player={ x:130, y:H/2, vx:pv.vx, vy:pv.vy, r:R, weapon:playerWeapon, color:'#4cc9f0', alive:true, hp:getMaxHP(playerWeapon), aimAngle:0, sword:makeSword() };
+  enemy ={ x:W-130, y:H/2, vx:ev.vx, vy:ev.vy, r:R, weapon:enemyWeapon,  color:'#e63946', alive:true, hp:getMaxHP(enemyWeapon), aimAngle:Math.PI, sword:makeSword() };
   arrows=[];
-  arrowTimers={player:0,enemy:0};
+  arrowTimers={player:0,enemy:0,playerShot:0,enemyShot:0};
   lastHit={player:-999,enemy:-999};
   updateHPBars();
 }
 
 function updateHPBars(){
-  document.getElementById('hp-bar-player').style.width=(player.hp/(playerWeapon==='bow'?MAX_HP_BOW:MAX_HP_SWORD)*100)+'%';
-  document.getElementById('hp-bar-enemy').style.width=(enemy.hp/(enemyWeapon==='bow'?MAX_HP_BOW:MAX_HP_SWORD)*100)+'%';
+  document.getElementById('hp-bar-player').style.width=(player.hp/getMaxHP(playerWeapon)*100)+'%';
+  document.getElementById('hp-bar-enemy').style.width=(enemy.hp/getMaxHP(enemyWeapon)*100)+'%';
 }
 
 function startGame(){
@@ -215,43 +298,52 @@ function loop(ts){
   animFrame=requestAnimationFrame(loop);
 }
 
-// ── angle helpers ──
 function angleDiff(a,b){ let d=((b-a+Math.PI*3)%(Math.PI*2))-Math.PI; return d; }
 function lerpAngle(a,b,t){ return a+angleDiff(a,b)*t; }
 
 function update(dt){
   moveBall(player,dt);
   moveBall(enemy,dt);
-
-  // ball-ball collision (elastic, equal mass)
   ballCollide(player,enemy);
 
-  // sword logic
-  if(player.weapon==='sword') updateSword(player,enemy,dt);
-  if(enemy.weapon==='sword')  updateSword(enemy,player,dt);
+  if(player.weapon==='sword') updateSword(player,enemy,dt,true);
+  if(enemy.weapon==='sword')  updateSword(enemy,player,dt,false);
 
-  // bow aim
   if(player.weapon==='bow') player.aimAngle=Math.atan2(enemy.y-player.y,enemy.x-player.x);
   if(enemy.weapon==='bow')  enemy.aimAngle =Math.atan2(player.y-enemy.y,player.x-enemy.x);
 
-if(player.weapon==='bow'){
-  arrowTimers.player+=dt;
-  if(arrowTimers.player>=ARROW_INTERVAL){
-    arrowTimers.player=0;
-    arrowTimers.playerShot=(arrowTimers.playerShot||0)+1;
-    if(arrowTimers.playerShot>=3){ arrowTimers.playerShot=0; shootTriple(player,enemy,'player'); }
-    else{ shootArrow(player,enemy,'player'); }
+  // bow shooting — player
+  if(player.weapon==='bow'){
+    const upg = playerUpgrade ? UPGRADES.bow.find(u=>u.id===playerUpgrade) : null;
+    const interval = upg ? ARROW_INTERVAL/(upg.fireRateMult||1) : ARROW_INTERVAL;
+    arrowTimers.player+=dt;
+    if(arrowTimers.player>=interval){
+      arrowTimers.player=0;
+      arrowTimers.playerShot=(arrowTimers.playerShot||0)+1;
+      const doTriple = upg ? upg.tripleShot : true;
+      if(doTriple && arrowTimers.playerShot>=3){
+        arrowTimers.playerShot=0;
+        shootTriple(player,enemy,'player', upg ? upg.spreadAngles : [-0.28,0.28]);
+      } else {
+        shootArrow(player,enemy,'player');
+      }
+    }
   }
-}
-if(enemy.weapon==='bow'){
-  arrowTimers.enemy+=dt;
-  if(arrowTimers.enemy>=ARROW_INTERVAL){
-    arrowTimers.enemy=0;
-    arrowTimers.enemyShot=(arrowTimers.enemyShot||0)+1;
-    if(arrowTimers.enemyShot>=3){ arrowTimers.enemyShot=0; shootTriple(enemy,player,'enemy'); }
-    else{ shootArrow(enemy,player,'enemy'); }
+
+  // bow shooting — enemy
+  if(enemy.weapon==='bow'){
+    arrowTimers.enemy+=dt;
+    if(arrowTimers.enemy>=ARROW_INTERVAL){
+      arrowTimers.enemy=0;
+      arrowTimers.enemyShot=(arrowTimers.enemyShot||0)+1;
+      if(arrowTimers.enemyShot>=3){
+        arrowTimers.enemyShot=0;
+        shootTriple(enemy,player,'enemy',[-0.28,0.28]);
+      } else {
+        shootArrow(enemy,player,'enemy');
+      }
+    }
   }
-}
 
   for(let i=arrows.length-1;i>=0;i--){
     const a=arrows[i];
@@ -262,10 +354,9 @@ if(enemy.weapon==='bow'){
     const dx=a.x-tgt.x,dy=a.y-tgt.y;
     if(Math.sqrt(dx*dx+dy*dy)<tgt.r+4){
       const sp=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
-      tgt.vx+=(a.vx/sp)*PUSH_SCALE;
-      tgt.vy+=(a.vy/sp)*PUSH_SCALE;
+      tgt.vx+=(a.vx/sp)*PUSH_SCALE; tgt.vy+=(a.vy/sp)*PUSH_SCALE;
       arrows.splice(i,1);
-      damage(tgt);
+      damage(tgt, a.owner==='player'?1:1);
     }
   }
 }
@@ -283,87 +374,64 @@ function ballCollide(a,b){
   const dist=Math.sqrt(dx*dx+dy*dy);
   const minDist=a.r+b.r;
   if(dist>=minDist||dist===0) return;
-
-  // separate
   const nx=dx/dist, ny=dy/dist;
   const overlap=(minDist-dist)/2;
   a.x-=nx*overlap; a.y-=ny*overlap;
   b.x+=nx*overlap; b.y+=ny*overlap;
-
-  // elastic 1D collision along normal
   const dvx=a.vx-b.vx, dvy=a.vy-b.vy;
   const dot=dvx*nx+dvy*ny;
-  if(dot<=0) return; // moving apart already
-  // equal mass: just swap normal component
+  if(dot<=0) return;
   a.vx-=dot*nx; a.vy-=dot*ny;
   b.vx+=dot*nx; b.vy+=dot*ny;
 }
 
-// ── SWORD STATE MACHINE ──
-function updateSword(att, tgt, dt){
+function updateSword(att, tgt, dt, isPlayer){
   const sw=att.sword;
+  const upg = (isPlayer && playerUpgrade) ? UPGRADES.sword.find(u=>u.id===playerUpgrade) : null;
+  const dashMult = upg ? upg.dashMult : 1;
+  const swordLen = upg ? upg.swordLen : SWORD_LEN;
 
-  // angle toward enemy
   const toEnemyAngle=Math.atan2(tgt.y-att.y,tgt.x-att.x);
-  // rest = opposite direction + 1.3 rad to the side
   const restAngle=toEnemyAngle+Math.PI+0.8;
   sw.restAngle=restAngle;
-
   const dist=Math.sqrt((tgt.x-att.x)**2+(tgt.y-att.y)**2);
-
   sw.cooldown=Math.max(0,sw.cooldown-dt);
 
   if(sw.state==='rest'){
-    // smoothly track rest position
     sw.angle=lerpAngle(sw.angle,restAngle,Math.min(1,dt*8));
-
-    // periodic dash toward enemy
     sw.dashTimer=Math.max(0,sw.dashTimer-dt);
     if(sw.dashTimer<=0){
       sw.dashTimer=2.0;
       const nx=(tgt.x-att.x), ny=(tgt.y-att.y);
       const nd=Math.sqrt(nx*nx+ny*ny)||1;
-      att.vx+=(nx/nd)*160;
-      att.vy+=(ny/nd)*160;
+      att.vx+=(nx/nd)*160*dashMult;
+      att.vy+=(ny/nd)*160*dashMult;
     }
-
-    // trigger attack when close enough and cooldown done
-    if(dist<SWORD_ATTACK_DIST && sw.cooldown<=0){
-      sw.state='slash';
-      sw.timer=0;
-      sw.hitDealt=false;
-      sw.slashAngle=toEnemyAngle; // slash toward enemy
+    if(dist<(swordLen+R+R+10) && sw.cooldown<=0){
+      sw.state='slash'; sw.timer=0; sw.hitDealt=false;
+      sw.slashAngle=toEnemyAngle;
     }
-  }
-  else if(sw.state==='slash'){
+  } else if(sw.state==='slash'){
     sw.timer+=dt;
     const p=Math.min(1,sw.timer/sw.slashDur);
-    // swing from rest to slash angle
     sw.angle=lerpAngle(restAngle,sw.slashAngle,easeOut(p));
-
-    // hit detection during slash
-    if(!sw.hitDealt) checkSwordBlade(att,tgt,sw.angle,sw);
-
-    if(sw.timer>=sw.slashDur){
-      sw.state='recover';
-      sw.timer=0;
-    }
-  }
-  else if(sw.state==='recover'){
+    if(!sw.hitDealt) checkSwordBlade(att,tgt,sw.angle,sw,isPlayer,swordLen);
+    if(sw.timer>=sw.slashDur){ sw.state='recover'; sw.timer=0; }
+  } else if(sw.state==='recover'){
     sw.timer+=dt;
     const p=Math.min(1,sw.timer/sw.recoverDur);
     sw.angle=lerpAngle(sw.slashAngle,restAngle,easeOut(p));
-    if(sw.timer>=sw.recoverDur){
-      sw.state='rest';
-      sw.cooldown=0.4; // pause before next swing
-    }
+    if(sw.timer>=sw.recoverDur){ sw.state='rest'; sw.cooldown=0.4; }
   }
 }
 
 function easeOut(t){ return 1-(1-t)*(1-t); }
 
-function checkSwordBlade(att,tgt,angle,sw){
-  const s0=att.r, s1=att.r+SWORD_LEN;
+function checkSwordBlade(att,tgt,angle,sw,isPlayer,swordLen){
+  const len = swordLen || SWORD_LEN;
+  const s0=att.r, s1=att.r+len;
+  const upg = (isPlayer && playerUpgrade) ? UPGRADES.sword.find(u=>u.id===playerUpgrade) : null;
+  const dmg = upg ? upg.damageMult : 1;
   for(let t=0;t<=1;t+=0.1){
     const d=s0+(s1-s0)*t;
     const bx=att.x+Math.cos(angle)*d, by=att.y+Math.sin(angle)*d;
@@ -371,21 +439,20 @@ function checkSwordBlade(att,tgt,angle,sw){
     if(Math.sqrt(dx*dx+dy*dy)<tgt.r+SWORD_W/2){
       const nx=(tgt.x-att.x), ny=(tgt.y-att.y);
       const nd=Math.sqrt(nx*nx+ny*ny)||1;
-      tgt.vx+=(nx/nd)*PUSH_SCALE;
-      tgt.vy+=(ny/nd)*PUSH_SCALE;
-      damage(tgt);
+      tgt.vx+=(nx/nd)*PUSH_SCALE; tgt.vy+=(ny/nd)*PUSH_SCALE;
+      damage(tgt, dmg);
       sw.hitDealt=true;
       break;
     }
   }
 }
 
-function damage(b){
+function damage(b, amt=1){
   const key=b===player?'player':'enemy';
   const now=performance.now();
   if(now-lastHit[key]<450) return;
   lastHit[key]=now;
-  b.hp=Math.max(0,b.hp-1);
+  b.hp=Math.max(0,b.hp-amt);
   updateHPBars();
   if(b.hp<=0){ b.alive=false; endGame(b===player?'lose':'win'); }
 }
@@ -397,19 +464,16 @@ function shootArrow(from,to,owner){
   arrows.push({x:from.x+(dx/d)*(from.r+10),y:from.y+(dy/d)*(from.r+10),vx:(dx/d)*spd,vy:(dy/d)*spd,owner,life:5});
 }
 
-  function shootTriple(from,to,owner){
+function shootTriple(from,to,owner,spreadAngles){
   const dx=to.x-from.x,dy=to.y-from.y;
-  const d=Math.sqrt(dx*dx+dy*dy)||1;
   const spd=320;
-  [-0.28, 0, 0.28].forEach(offset=>{
-    const ang=Math.atan2(dy,dx)+offset;
-    arrows.push({
-      x:from.x+Math.cos(ang)*(from.r+10),
-      y:from.y+Math.sin(ang)*(from.r+10),
-      vx:Math.cos(ang)*spd,
-      vy:Math.sin(ang)*spd,
-      owner,life:5
-    });
+  const baseAng=Math.atan2(dy,dx);
+  // always shoot center arrow
+  arrows.push({x:from.x+Math.cos(baseAng)*(from.r+10),y:from.y+Math.sin(baseAng)*(from.r+10),vx:Math.cos(baseAng)*spd,vy:Math.sin(baseAng)*spd,owner,life:5});
+  // side arrows from spread
+  (spreadAngles||[-0.28,0.28]).forEach(offset=>{
+    const ang=baseAng+offset;
+    arrows.push({x:from.x+Math.cos(ang)*(from.r+10),y:from.y+Math.sin(ang)*(from.r+10),vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,owner,life:5});
   });
 }
 
@@ -417,17 +481,14 @@ function shootArrow(from,to,owner){
 function draw(){
   const cv=document.getElementById('arena-canvas');
   const ctx=cv.getContext('2d');
-
   ctx.fillStyle='#0d0d16'; ctx.fillRect(0,0,W,H);
 
-  // grid
   ctx.strokeStyle='rgba(36,36,62,.8)'; ctx.lineWidth=1;
   for(let x=0;x<=W;x+=40){ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke(); }
   for(let y=0;y<=H;y+=40){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke(); }
   ctx.strokeStyle='rgba(55,55,90,.9)'; ctx.lineWidth=2;
   ctx.strokeRect(1,1,W-2,H-2);
 
-  // arrows
   arrows.forEach(a=>{
     const ang=Math.atan2(a.vy,a.vx);
     ctx.save(); ctx.translate(a.x,a.y); ctx.rotate(ang);
@@ -439,29 +500,23 @@ function draw(){
     ctx.restore();
   });
 
-  // draw balls (body only, no sword yet)
   drawBallBody(ctx,player);
   drawBallBody(ctx,enemy);
-
-  // draw bows on top of balls
   if(player.weapon==='bow') drawBow(ctx,player);
   if(enemy.weapon==='bow')  drawBow(ctx,enemy);
 
-  // draw swords LAST on overlay canvas — always on top of everything including ball body
   const sc=document.getElementById('sword-canvas');
   const sctx=sc.getContext('2d');
   sctx.clearRect(0,0,W,H);
-  if(player.weapon==='sword' && player.alive) drawSword(sctx,player);
-  if(enemy.weapon==='sword'  && enemy.alive)  drawSword(sctx,enemy);
+  if(player.weapon==='sword' && player.alive) drawSword(sctx,player,true);
+  if(enemy.weapon==='sword'  && enemy.alive)  drawSword(sctx,enemy,false);
 }
 
 function drawBallBody(ctx,b){
   if(!b.alive) return;
-  // glow
   const g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r*2.2);
   g.addColorStop(0,b.color+'2a'); g.addColorStop(1,'transparent');
   ctx.beginPath(); ctx.arc(b.x,b.y,b.r*2.2,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
-  // body
   const bg=ctx.createRadialGradient(b.x-4,b.y-4,1,b.x,b.y,b.r);
   bg.addColorStop(0,'#fff'); bg.addColorStop(.25,b.color); bg.addColorStop(1,b.color+'66');
   ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
@@ -469,12 +524,14 @@ function drawBallBody(ctx,b){
   ctx.strokeStyle=b.color; ctx.lineWidth=2; ctx.stroke();
 }
 
-function drawSword(ctx,b){
+function drawSword(ctx,b,isPlayer){
   const sw=b.sword;
   const angle=sw.angle;
-  const isSlashing=(sw.state==='slash'||sw.state==='recover');
+  const upg = (isPlayer && playerUpgrade) ? UPGRADES.sword.find(u=>u.id===playerUpgrade) : null;
+  const swordLen = upg ? upg.swordLen : SWORD_LEN;
+  const isCurved = upg && upg.id==='curved';
+  const isWide   = upg && upg.id==='wide';
 
-  // ── sword body ──
   ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(angle);
   const s=b.r+1;
 
@@ -483,31 +540,70 @@ function drawSword(ctx,b){
   ctx.beginPath(); ctx.moveTo(s,0); ctx.lineTo(s+10,0); ctx.stroke();
 
   // guard
-  ctx.strokeStyle='#c9a227'; ctx.lineWidth=3;
-  ctx.beginPath(); ctx.moveTo(s+10,-9); ctx.lineTo(s+10,9); ctx.stroke();
+  ctx.strokeStyle='#c9a227'; ctx.lineWidth=isWide?5:3;
+  ctx.beginPath(); ctx.moveTo(s+10,isWide?-13:-9); ctx.lineTo(s+10,isWide?13:9); ctx.stroke();
 
-  // blade
-  const bs=s+10, be=s+SWORD_LEN;
-  const gr=ctx.createLinearGradient(bs,0,be,0);
-  gr.addColorStop(0,'#e8e8ff'); gr.addColorStop(.5,'#b8c0ff'); gr.addColorStop(1,'rgba(160,170,255,0)');
-  ctx.strokeStyle=gr; ctx.lineWidth=SWORD_W; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(bs,0); ctx.lineTo(be,0); ctx.stroke();
+  const bs=s+10, be=s+swordLen;
 
-  // shine
-  ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.moveTo(bs+2,-2); ctx.lineTo(be-4,-1); ctx.stroke();
+  if(isCurved){
+    // draw curved blade as arc
+    ctx.save();
+    ctx.strokeStyle='#a0d8ff'; ctx.lineWidth=4; ctx.lineCap='round';
+    ctx.beginPath();
+    // simulate curve: draw quadratic bezier
+    ctx.moveTo(bs,0);
+    ctx.quadraticCurveTo(bs+(be-bs)*0.5, -14, be, -4);
+    ctx.stroke();
+    // shine
+    ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.moveTo(bs+4,0);
+    ctx.quadraticCurveTo(bs+(be-bs)*0.5,-8,be-4,-3);
+    ctx.stroke();
+    ctx.restore();
+  } else {
+    // straight blade (normal or wide)
+    const bladeW = isWide ? 9 : SWORD_W;
+    const gr=ctx.createLinearGradient(bs,0,be,0);
+    gr.addColorStop(0,'#e8e8ff'); gr.addColorStop(.5,isWide?'#d0a0ff':'#b8c0ff'); gr.addColorStop(1,'rgba(160,170,255,0)');
+    ctx.strokeStyle=gr; ctx.lineWidth=bladeW; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(bs,0); ctx.lineTo(be,0); ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(bs+2,-2); ctx.lineTo(be-4,-1); ctx.stroke();
+  }
 
   ctx.restore();
 }
 
 function drawBow(ctx,b){
+  const isPlayer = b===player;
+  const upg = (isPlayer && playerUpgrade) ? UPGRADES.bow.find(u=>u.id===playerUpgrade) : null;
+
   ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.aimAngle);
   const d=b.r+14;
-  ctx.strokeStyle='#c9a227'; ctx.lineWidth=2.5;
-  ctx.beginPath(); ctx.arc(d,0,16,-Math.PI*.65,Math.PI*.65); ctx.stroke();
-  const sy=Math.sin(Math.PI*.65)*16;
-  ctx.strokeStyle='#e8e8c0'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(d,-sy); ctx.lineTo(d+4,0); ctx.lineTo(d,sy); ctx.stroke();
+
+  if(upg && upg.id==='wide_bow'){
+    // wider bow — bigger arc
+    ctx.strokeStyle='#e0c040'; ctx.lineWidth=3.5;
+    ctx.beginPath(); ctx.arc(d,0,22,-Math.PI*.7,Math.PI*.7); ctx.stroke();
+    const sy=Math.sin(Math.PI*.7)*22;
+    ctx.strokeStyle='#ffffc0'; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(d,-sy); ctx.lineTo(d+6,0); ctx.lineTo(d,sy); ctx.stroke();
+  } else if(upg && upg.id==='dark_bow'){
+    // dark brown bow
+    ctx.strokeStyle='#5c3010'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(d,0,16,-Math.PI*.65,Math.PI*.65); ctx.stroke();
+    const sy=Math.sin(Math.PI*.65)*16;
+    ctx.strokeStyle='#9c7040'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(d,-sy); ctx.lineTo(d+4,0); ctx.lineTo(d,sy); ctx.stroke();
+  } else {
+    // default bow
+    ctx.strokeStyle='#c9a227'; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.arc(d,0,16,-Math.PI*.65,Math.PI*.65); ctx.stroke();
+    const sy=Math.sin(Math.PI*.65)*16;
+    ctx.strokeStyle='#e8e8c0'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(d,-sy); ctx.lineTo(d+4,0); ctx.lineTo(d,sy); ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -515,13 +611,62 @@ function endGame(result){
   if(!gameRunning) return;
   gameRunning=false; cancelAnimationFrame(animFrame);
   setTimeout(()=>{
-    const t=document.getElementById('result-title');
-    const s=document.getElementById('result-sub');
-    if(result==='win'){ t.textContent='Victory!'; t.className='result-title win'; s.textContent='Enemy defeated'; }
-    else if(result==='lose'){ t.textContent='Defeat'; t.className='result-title lose'; s.textContent='Try again'; }
-    else { t.textContent='Draw'; t.className='result-title draw'; s.textContent='Both fell'; }
-    showScreen('result-screen');
+    roundCount++;
+    if(roundCount===1 && result==='win'){
+      showUpgradeScreen();
+    } else {
+      showResult(result);
+    }
   },500);
+}
+
+function showResult(result){
+  const t=document.getElementById('result-title');
+  const s=document.getElementById('result-sub');
+  if(result==='win'){ t.textContent='Victory!'; t.className='result-title win'; s.textContent='Enemy defeated'; }
+  else if(result==='lose'){ t.textContent='Defeat'; t.className='result-title lose'; s.textContent='Try again'; }
+  else { t.textContent='Draw'; t.className='result-title draw'; s.textContent='Both fell'; }
+  showScreen('result-screen');
+}
+
+// ── UPGRADE SCREEN ──
+function showUpgradeScreen(){
+  const upgrades = UPGRADES[playerWeapon];
+  const grid = document.getElementById('upgrade-grid');
+  grid.innerHTML='';
+  selectedUpgradeId=null;
+  document.getElementById('btn-upgrade').classList.remove('visible');
+
+  upgrades.forEach(upg=>{
+    const card=document.createElement('div');
+    card.className='upgrade-card';
+    card.id='upg-'+upg.id;
+    const stats=upg.stats.map(s=>`<span class="stat-pill ${s.g?'stat-good':'stat-bad'}">${s.t}</span>`).join('');
+    card.innerHTML=`
+      <div class="upgrade-badge">✓</div>
+      <span class="upgrade-icon">${upg.icon}</span>
+      <div class="upgrade-name">${upg.name}</div>
+      <div class="upgrade-desc">${upg.desc}</div>
+      <div class="upgrade-stats">${stats}</div>
+    `;
+    card.onclick=()=>selectUpgrade(upg.id);
+    grid.appendChild(card);
+  });
+
+  showScreen('upgrade-screen');
+}
+
+function selectUpgrade(id){
+  selectedUpgradeId=id;
+  document.querySelectorAll('.upgrade-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('upg-'+id).classList.add('selected');
+  document.getElementById('btn-upgrade').classList.add('visible');
+}
+
+function applyUpgrade(){
+  if(!selectedUpgradeId) return;
+  playerUpgrade=selectedUpgradeId;
+  rematch();
 }
 
 function rematch(){
@@ -533,7 +678,7 @@ function rematch(){
 
 function goMenu(){
   showScreen('menu-screen');
-  playerWeapon=null;
+  playerWeapon=null; playerUpgrade=null; roundCount=0;
   document.querySelectorAll('.weapon-card').forEach(c=>c.classList.remove('selected'));
   document.getElementById('btn-fight').classList.remove('visible');
 }
