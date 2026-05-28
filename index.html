@@ -181,7 +181,7 @@ function makeSword(){
 
 function initBalls(){
   enemyWeapon=playerWeapon==='sword'?'bow':'sword';
-  const spd=130;
+  const spd=150;
   function rv(){ const a=Math.random()*Math.PI*2; return {vx:Math.cos(a)*spd,vy:Math.sin(a)*spd}; }
   const pv=rv(), ev=rv();
 
@@ -234,19 +234,23 @@ function update(dt){
   if(player.weapon==='bow') player.aimAngle=Math.atan2(enemy.y-player.y,enemy.x-player.x);
   if(enemy.weapon==='bow')  enemy.aimAngle =Math.atan2(player.y-enemy.y,player.x-enemy.x);
 
-  if(player.weapon==='bow'){
+if(player.weapon==='bow'){
   arrowTimers.player+=dt;
-  if(arrowTimers.player>=ARROW_INTERVAL){ arrowTimers.player=0; shootArrow(player,enemy,'player'); }
-  if(!arrowTimers.playerTriple) arrowTimers.playerTriple=10;
-  arrowTimers.playerTriple-=dt;
-  if(arrowTimers.playerTriple<=0){ arrowTimers.playerTriple=10; shootTriple(player,enemy,'player'); }
+  if(arrowTimers.player>=ARROW_INTERVAL){
+    arrowTimers.player=0;
+    arrowTimers.playerShot=(arrowTimers.playerShot||0)+1;
+    if(arrowTimers.playerShot>=3){ arrowTimers.playerShot=0; shootTriple(player,enemy,'player'); }
+    else{ shootArrow(player,enemy,'player'); }
+  }
 }
 if(enemy.weapon==='bow'){
   arrowTimers.enemy+=dt;
-  if(arrowTimers.enemy>=ARROW_INTERVAL){ arrowTimers.enemy=0; shootArrow(enemy,player,'enemy'); }
-  if(!arrowTimers.enemyTriple) arrowTimers.enemyTriple=10+Math.random();
-  arrowTimers.enemyTriple-=dt;
-  if(arrowTimers.enemyTriple<=0){ arrowTimers.enemyTriple=10+Math.random(); shootTriple(enemy,player,'enemy'); }
+  if(arrowTimers.enemy>=ARROW_INTERVAL){
+    arrowTimers.enemy=0;
+    arrowTimers.enemyShot=(arrowTimers.enemyShot||0)+1;
+    if(arrowTimers.enemyShot>=3){ arrowTimers.enemyShot=0; shootTriple(enemy,player,'enemy'); }
+    else{ shootArrow(enemy,player,'enemy'); }
+  }
 }
 
   for(let i=arrows.length-1;i>=0;i--){
@@ -389,14 +393,14 @@ function damage(b){
 function shootArrow(from,to,owner){
   const dx=to.x-from.x,dy=to.y-from.y;
   const d=Math.sqrt(dx*dx+dy*dy)||1;
-  const spd=350;
+  const spd=320;
   arrows.push({x:from.x+(dx/d)*(from.r+10),y:from.y+(dy/d)*(from.r+10),vx:(dx/d)*spd,vy:(dy/d)*spd,owner,life:5});
 }
 
   function shootTriple(from,to,owner){
   const dx=to.x-from.x,dy=to.y-from.y;
   const d=Math.sqrt(dx*dx+dy*dy)||1;
-  const spd=300;
+  300;
   [-0.28, 0, 0.28].forEach(offset=>{
     const ang=Math.atan2(dy,dx)+offset;
     arrows.push({
