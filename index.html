@@ -459,17 +459,6 @@ function updateShield(b, dt){
   }
 }
   
-  // dash toward enemy periodically
-  if(!sh.dashTimer) sh.dashTimer=1.0+Math.random();
-  sh.dashTimer=Math.max(0,sh.dashTimer-dt);
-  if(sh.dashTimer<=0){
-    sh.dashTimer=2.0;
-    const nx=tgt.x-b.x, ny=tgt.y-b.y;
-    const nd=Math.sqrt(nx*nx+ny*ny)||1;
-    b.vx+=(nx/nd)*140; b.vy+=(ny/nd)*140;
-  }
-}
-
 function checkSwordBlade(att,tgt,angle,sw,isPlayer,swordLen){
   const len = swordLen || SWORD_LEN;
   const s0=att.r, s1=att.r+len;
