@@ -448,9 +448,7 @@ function updateSword(att, tgt, dt, isPlayer){
   }
 }
 
-function easeOut(t){ return 1-(1-t)*(1-t); }
-
-function updateShield(b, tgt, dt){
+function updateShield(b, dt){
   const sh=b.shield;
   if(sh.blocking){
     sh.blockTimer-=dt;
@@ -459,6 +457,8 @@ function updateShield(b, tgt, dt){
     sh.timer+=dt;
     if(sh.timer>=SHIELD_CYCLE){ sh.blocking=true; sh.blockTimer=SHIELD_DURATION; sh.timer=0; }
   }
+}
+  
   // dash toward enemy periodically
   if(!sh.dashTimer) sh.dashTimer=1.0+Math.random();
   sh.dashTimer=Math.max(0,sh.dashTimer-dt);
