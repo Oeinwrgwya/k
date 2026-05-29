@@ -146,6 +146,11 @@
       <span class="weapon-icon">🏹</span>
       <div class="weapon-name">Bow</div>
     </div>
+    <div class="weapon-card" id="card-shield" onclick="selectWeapon('shield')">
+      <div class="weapon-badge">✓</div>
+      <span class="weapon-icon">🛡️</span>
+      <div class="weapon-name">Shield</div>
+    </div>
   </div>
   <button class="btn-fight" id="btn-fight" onclick="startGame()">Fight</button>
 </div>
@@ -188,6 +193,9 @@
 const W=900, H=600, R=22;
 const MAX_HP_SWORD=10;
 const MAX_HP_BOW=8;
+const MAX_HP_SHIELD=12;
+const SHIELD_CYCLE=5.0;   // seconds between blocks
+const SHIELD_DURATION=2.0; // seconds block lasts
 const SWORD_LEN=68;
 const SWORD_W=5;
 const ARROW_INTERVAL=1.8;
@@ -239,7 +247,8 @@ const UPGRADES = {
       stats:[{t:'5 arrows per salvo',g:true},{t:'Fire rate normal',g:true}],
       fireRateMult:1, tripleShot:true, spreadAngles:[-0.42,-0.21,0.21,0.42]
     }
-  ]
+  ],
+  shield: []  // no upgrades yet
 };
 
 function selectWeapon(w){
@@ -262,15 +271,17 @@ function makeSword(){
   };
 }
 
-function getMaxHP(weapon){ return weapon==='bow'?MAX_HP_BOW:MAX_HP_SWORD; }
+function getMaxHP(weapon){ return weapon==='bow'?MAX_HP_BOW:weapon==='shield'?MAX_HP_SHIELD:MAX_HP_SWORD; }
 
 function initBalls(){
-  enemyWeapon=playerWeapon==='sword'?'bow':'sword';
+  if(playerWeapon==='sword') enemyWeapon='bow';
+  else if(playerWeapon==='bow') enemyWeapon='sword';
+  else { enemyWeapon=['sword','bow'][Math.floor(Math.random()*2)]; }
   const spd=150;
   function rv(){ const a=Math.random()*Math.PI*2; return {vx:Math.cos(a)*spd,vy:Math.sin(a)*spd}; }
   const pv=rv(), ev=rv();
-  player={ x:130, y:H/2, vx:pv.vx, vy:pv.vy, r:R, weapon:playerWeapon, color:'#4cc9f0', alive:true, hp:getMaxHP(playerWeapon), aimAngle:0, sword:makeSword() };
-  enemy ={ x:W-130, y:H/2, vx:ev.vx, vy:ev.vy, r:R, weapon:enemyWeapon,  color:'#e63946', alive:true, hp:getMaxHP(enemyWeapon), aimAngle:Math.PI, sword:makeSword() };
+  player={ x:130, y:H/2, vx:pv.vx, vy:pv.vy, r:R, weapon:playerWeapon, color:'#4cc9f0', alive:true, hp:getMaxHP(playerWeapon), aimAngle:0, sword:makeSword(), shield:{timer:0,blocking:false,blockTimer:0} };
+  enemy ={ x:W-130, y:H/2, vx:ev.vx, vy:ev.vy, r:R, weapon:enemyWeapon,  color:'#e63946', alive:true, hp:getMaxHP(enemyWeapon), aimAngle:Math.PI, sword:makeSword(), shield:{timer:0,blocking:false,blockTimer:0} };
   arrows=[];
   arrowTimers={player:0,enemy:0,playerShot:0,enemyShot:0};
   lastHit={player:-999,enemy:-999};
@@ -308,6 +319,10 @@ function update(dt){
 
   if(player.weapon==='sword') updateSword(player,enemy,dt,true);
   if(enemy.weapon==='sword')  updateSword(enemy,player,dt,false);
+
+  // shield logic
+  updateShield(player,dt);
+  updateShield(enemy,dt);
 
   if(player.weapon==='bow') player.aimAngle=Math.atan2(enemy.y-player.y,enemy.x-player.x);
   if(enemy.weapon==='bow')  enemy.aimAngle =Math.atan2(player.y-enemy.y,player.x-enemy.x);
@@ -353,10 +368,18 @@ function update(dt){
     if(!tgt.alive) continue;
     const dx=a.x-tgt.x,dy=a.y-tgt.y;
     if(Math.sqrt(dx*dx+dy*dy)<tgt.r+4){
+      // shield block/reflect
+      if(tgt.shield && tgt.shield.blocking){
+        // reflect arrow back toward original shooter
+        a.vx=-a.vx; a.vy=-a.vy;
+        a.owner=a.owner==='player'?'enemy':'player';
+        a.life=5;
+        continue;
+      }
       const sp=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
       tgt.vx+=(a.vx/sp)*PUSH_SCALE; tgt.vy+=(a.vy/sp)*PUSH_SCALE;
       arrows.splice(i,1);
-      damage(tgt, a.owner==='player'?1:1);
+      damage(tgt, 1);
     }
   }
 }
@@ -427,11 +450,39 @@ function updateSword(att, tgt, dt, isPlayer){
 
 function easeOut(t){ return 1-(1-t)*(1-t); }
 
+function updateShield(b, dt){
+  const sh=b.shield;
+  if(sh.blocking){
+    sh.blockTimer-=dt;
+    if(sh.blockTimer<=0){ sh.blocking=false; sh.timer=0; }
+  } else {
+    sh.timer+=dt;
+    if(sh.timer>=SHIELD_CYCLE){ sh.blocking=true; sh.blockTimer=SHIELD_DURATION; sh.timer=0; }
+  }
+}
+
 function checkSwordBlade(att,tgt,angle,sw,isPlayer,swordLen){
   const len = swordLen || SWORD_LEN;
   const s0=att.r, s1=att.r+len;
   const upg = (isPlayer && playerUpgrade) ? UPGRADES.sword.find(u=>u.id===playerUpgrade) : null;
   const dmg = upg ? upg.damageMult : 1;
+  // if target is blocking with shield, negate damage and push attacker back
+  if(tgt.shield && tgt.shield.blocking){
+    for(let t=0;t<=1;t+=0.1){
+      const d=s0+(s1-s0)*t;
+      const bx=att.x+Math.cos(angle)*d, by=att.y+Math.sin(angle)*d;
+      const dx=bx-tgt.x, dy=by-tgt.y;
+      if(Math.sqrt(dx*dx+dy*dy)<tgt.r+SWORD_W/2){
+        // push attacker back
+        const nx=(att.x-tgt.x), ny=(att.y-tgt.y);
+        const nd=Math.sqrt(nx*nx+ny*ny)||1;
+        att.vx+=(nx/nd)*PUSH_SCALE*1.2; att.vy+=(ny/nd)*PUSH_SCALE*1.2;
+        sw.hitDealt=true;
+        break;
+      }
+    }
+    return;
+  }
   for(let t=0;t<=1;t+=0.1){
     const d=s0+(s1-s0)*t;
     const bx=att.x+Math.cos(angle)*d, by=att.y+Math.sin(angle)*d;
@@ -504,6 +555,8 @@ function draw(){
   drawBallBody(ctx,enemy);
   if(player.weapon==='bow') drawBow(ctx,player);
   if(enemy.weapon==='bow')  drawBow(ctx,enemy);
+  if(player.weapon==='shield') drawShield(ctx,player,true);
+  if(enemy.weapon==='shield')  drawShield(ctx,enemy,false);
 
   const sc=document.getElementById('sword-canvas');
   const sctx=sc.getContext('2d');
@@ -575,6 +628,60 @@ function drawSword(ctx,b,isPlayer){
   ctx.restore();
 }
 
+function drawShield(ctx,b,isPlayer){
+  const sh=b.shield;
+  const toEnemy= b===player
+    ? Math.atan2(enemy.y-b.y, enemy.x-b.x)
+    : Math.atan2(player.y-b.y, player.x-b.x);
+
+  const blocking=sh.blocking;
+  const d=b.r+10;
+
+  ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(toEnemy);
+
+  if(blocking){
+    // glowing active shield
+    const glow=ctx.createRadialGradient(d,0,2,d,0,22);
+    glow.addColorStop(0,'rgba(255,220,80,0.6)');
+    glow.addColorStop(1,'rgba(255,180,0,0)');
+    ctx.beginPath(); ctx.arc(d,0,22,0,Math.PI*2); ctx.fillStyle=glow; ctx.fill();
+
+    ctx.strokeStyle='#ffe066'; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.arc(d,0,-Math.PI*.7,Math.PI*.7); ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,200,0.7)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(d,0,-Math.PI*.5,Math.PI*.5); ctx.stroke();
+  } else {
+    // idle shield — dimmer
+    const cooldownFrac = sh.timer/SHIELD_CYCLE;
+    ctx.globalAlpha=0.35+cooldownFrac*0.45;
+    ctx.strokeStyle='#a07820'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(d,0,-Math.PI*.7,Math.PI*.7); ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+
+  ctx.restore();
+
+  // cooldown arc around ball
+  if(!blocking){
+    const frac=sh.timer/SHIELD_CYCLE;
+    ctx.save(); ctx.translate(b.x,b.y);
+    ctx.strokeStyle='rgba(255,200,50,0.5)'; ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(0,0,b.r+3,-Math.PI/2,-Math.PI/2+frac*Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  } else {
+    // block time remaining arc
+    const frac=sh.blockTimer/SHIELD_DURATION;
+    ctx.save(); ctx.translate(b.x,b.y);
+    ctx.strokeStyle='rgba(255,230,80,0.9)'; ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.arc(0,0,b.r+3,-Math.PI/2,-Math.PI/2+frac*Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function drawBow(ctx,b){
   const isPlayer = b===player;
   const upg = (isPlayer && playerUpgrade) ? UPGRADES.bow.find(u=>u.id===playerUpgrade) : null;
@@ -630,8 +737,12 @@ function showResult(result){
 }
 
 // ── UPGRADE SCREEN ──
-function showUpgradeScreen(){
-  const upgrades = UPGRADES[playerWeapon];
+function showUpgradeScreen(pendingResult){
+  const upgrades = UPGRADES[playerWeapon] || [];
+  if(upgrades.length===0){
+    showResult(pendingResult);
+    return;
+  }
   const grid = document.getElementById('upgrade-grid');
   grid.innerHTML='';
   selectedUpgradeId=null;
@@ -652,6 +763,11 @@ function showUpgradeScreen(){
     card.onclick=()=>selectUpgrade(upg.id);
     grid.appendChild(card);
   });
+
+  const sub=document.getElementById('upgrade-sub');
+  if(pendingResult==='win') sub.textContent='You won — upgrade and fight again';
+  else if(pendingResult==='lose') sub.textContent='You lost — pick your upgrade';
+  else sub.textContent='Choose your path';
 
   showScreen('upgrade-screen');
 }
