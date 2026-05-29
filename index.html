@@ -247,7 +247,7 @@ const UPGRADES = {
       stats:[{t:'5 arrows per salvo',g:true},{t:'Fire rate normal',g:true}],
       fireRateMult:1, tripleShot:true, spreadAngles:[-0.42,-0.21,0.21,0.42]
     }
-  ],
+  ]
   shield: []  // no upgrades yet
 };
 
@@ -321,8 +321,8 @@ function update(dt){
   if(enemy.weapon==='sword')  updateSword(enemy,player,dt,false);
 
   // shield logic
-  if(player.weapon==='shield') updateShield(player,enemy,dt);
-  if(enemy.weapon==='shield')  updateShield(enemy,player,dt);
+  updateShield(player,dt);
+  updateShield(enemy,dt);
 
   if(player.weapon==='bow') player.aimAngle=Math.atan2(enemy.y-player.y,enemy.x-player.x);
   if(enemy.weapon==='bow')  enemy.aimAngle =Math.atan2(player.y-enemy.y,player.x-enemy.x);
@@ -369,7 +369,7 @@ function update(dt){
     const dx=a.x-tgt.x,dy=a.y-tgt.y;
     if(Math.sqrt(dx*dx+dy*dy)<tgt.r+4){
       // shield block/reflect
-      if(tgt.weapon==='shield' && tgt.shield && tgt.shield.blocking){
+      if(tgt.shield && tgt.shield.blocking){
         // reflect arrow back toward original shooter
         a.vx=-a.vx; a.vy=-a.vy;
         a.owner=a.owner==='player'?'enemy':'player';
@@ -448,6 +448,8 @@ function updateSword(att, tgt, dt, isPlayer){
   }
 }
 
+function easeOut(t){ return 1-(1-t)*(1-t); }
+
 function updateShield(b, dt){
   const sh=b.shield;
   if(sh.blocking){
@@ -458,14 +460,14 @@ function updateShield(b, dt){
     if(sh.timer>=SHIELD_CYCLE){ sh.blocking=true; sh.blockTimer=SHIELD_DURATION; sh.timer=0; }
   }
 }
-  
+
 function checkSwordBlade(att,tgt,angle,sw,isPlayer,swordLen){
   const len = swordLen || SWORD_LEN;
   const s0=att.r, s1=att.r+len;
   const upg = (isPlayer && playerUpgrade) ? UPGRADES.sword.find(u=>u.id===playerUpgrade) : null;
   const dmg = upg ? upg.damageMult : 1;
   // if target is blocking with shield, negate damage and push attacker back
-  if(tgt.weapon==='shield' && tgt.shield && tgt.shield.blocking){
+  if(tgt.shield && tgt.shield.blocking){
     for(let t=0;t<=1;t+=0.1){
       const d=s0+(s1-s0)*t;
       const bx=att.x+Math.cos(angle)*d, by=att.y+Math.sin(angle)*d;
