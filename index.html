@@ -247,7 +247,7 @@ const UPGRADES = {
       stats:[{t:'5 arrows per salvo',g:true},{t:'Fire rate normal',g:true}],
       fireRateMult:1, tripleShot:true, spreadAngles:[-0.42,-0.21,0.21,0.42]
     }
-  ]
+  ],
   shield: []  // no upgrades yet
 };
 
@@ -321,8 +321,8 @@ function update(dt){
   if(enemy.weapon==='sword')  updateSword(enemy,player,dt,false);
 
   // shield logic
-  updateShield(player,dt);
-  updateShield(enemy,dt);
+  if(player.weapon==='shield') updateShield(player,dt);
+  if(enemy.weapon==='shield')  updateShield(enemy,dt);
 
   if(player.weapon==='bow') player.aimAngle=Math.atan2(enemy.y-player.y,enemy.x-player.x);
   if(enemy.weapon==='bow')  enemy.aimAngle =Math.atan2(player.y-enemy.y,player.x-enemy.x);
@@ -647,15 +647,15 @@ function drawShield(ctx,b,isPlayer){
     ctx.beginPath(); ctx.arc(d,0,22,0,Math.PI*2); ctx.fillStyle=glow; ctx.fill();
 
     ctx.strokeStyle='#ffe066'; ctx.lineWidth=4;
-    ctx.beginPath(); ctx.arc(d,0,-Math.PI*.7,Math.PI*.7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(d,0,18,-Math.PI*.7,Math.PI*.7); ctx.stroke();
     ctx.strokeStyle='rgba(255,255,200,0.7)'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(d,0,-Math.PI*.5,Math.PI*.5); ctx.stroke();
+    ctx.beginPath(); ctx.arc(d,0,18,-Math.PI*.5,Math.PI*.5); ctx.stroke();
   } else {
     // idle shield — dimmer
     const cooldownFrac = sh.timer/SHIELD_CYCLE;
     ctx.globalAlpha=0.35+cooldownFrac*0.45;
     ctx.strokeStyle='#a07820'; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.arc(d,0,-Math.PI*.7,Math.PI*.7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(d,0,18,-Math.PI*.7,Math.PI*.7); ctx.stroke();
     ctx.globalAlpha=1;
   }
 
