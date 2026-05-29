@@ -612,8 +612,8 @@ function endGame(result){
   gameRunning=false; cancelAnimationFrame(animFrame);
   setTimeout(()=>{
     roundCount++;
-    if(roundCount===1 && result==='win'){
-      showUpgradeScreen();
+    if(roundCount===1){
+      showUpgradeScreen(result);
     } else {
       showResult(result);
     }
