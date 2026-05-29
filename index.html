@@ -321,8 +321,8 @@ function update(dt){
   if(enemy.weapon==='sword')  updateSword(enemy,player,dt,false);
 
   // shield logic
-  if(player.weapon==='shield') updateShield(player,dt);
-  if(enemy.weapon==='shield')  updateShield(enemy,dt);
+  if(player.weapon==='shield') updateShield(player,enemy,dt);
+  if(enemy.weapon==='shield')  updateShield(enemy,player,dt);
 
   if(player.weapon==='bow') player.aimAngle=Math.atan2(enemy.y-player.y,enemy.x-player.x);
   if(enemy.weapon==='bow')  enemy.aimAngle =Math.atan2(player.y-enemy.y,player.x-enemy.x);
@@ -450,7 +450,7 @@ function updateSword(att, tgt, dt, isPlayer){
 
 function easeOut(t){ return 1-(1-t)*(1-t); }
 
-function updateShield(b, dt){
+function updateShield(b, tgt, dt){
   const sh=b.shield;
   if(sh.blocking){
     sh.blockTimer-=dt;
@@ -458,6 +458,15 @@ function updateShield(b, dt){
   } else {
     sh.timer+=dt;
     if(sh.timer>=SHIELD_CYCLE){ sh.blocking=true; sh.blockTimer=SHIELD_DURATION; sh.timer=0; }
+  }
+  // dash toward enemy periodically
+  if(!sh.dashTimer) sh.dashTimer=1.0+Math.random();
+  sh.dashTimer=Math.max(0,sh.dashTimer-dt);
+  if(sh.dashTimer<=0){
+    sh.dashTimer=2.0;
+    const nx=tgt.x-b.x, ny=tgt.y-b.y;
+    const nd=Math.sqrt(nx*nx+ny*ny)||1;
+    b.vx+=(nx/nd)*140; b.vy+=(ny/nd)*140;
   }
 }
 
