@@ -193,9 +193,9 @@
 const W=900, H=600, R=22;
 const MAX_HP_SWORD=10;
 const MAX_HP_BOW=8;
-const MAX_HP_SHIELD=12;
-const SHIELD_CYCLE=5.0;   // seconds between blocks
-const SHIELD_DURATION=2.0; // seconds block lasts
+const MAX_HP_SHIELD=16;
+const SHIELD_CYCLE=4.0;   // seconds between blocks
+const SHIELD_DURATION=4.0; // seconds block lasts
 const SWORD_LEN=68;
 const SWORD_W=5;
 const ARROW_INTERVAL=1.8;
@@ -367,15 +367,24 @@ function update(dt){
     const tgt=a.owner==='player'?enemy:player;
     if(!tgt.alive) continue;
     const dx=a.x-tgt.x,dy=a.y-tgt.y;
-    if(Math.sqrt(dx*dx+dy*dy)<tgt.r+4){
-      // shield block/reflect
-      if(tgt.shield && tgt.shield.blocking){
-        // reflect arrow back toward original shooter
-        a.vx=-a.vx; a.vy=-a.vy;
+    // shield collision — check against shield ) position first
+    if(tgt.weapon==='shield' && tgt.shield && tgt.shield.blocking){
+      const toEnemyA=tgt===player?Math.atan2(enemy.y-tgt.y,enemy.x-tgt.x):Math.atan2(player.y-tgt.y,player.x-tgt.x);
+      const sx=tgt.x+Math.cos(toEnemyA)*(tgt.r+10);
+      const sy=tgt.y+Math.sin(toEnemyA)*(tgt.r+10);
+      const sdx=a.x-sx, sdy=a.y-sy;
+      if(Math.sqrt(sdx*sdx+sdy*sdy)<22){
+        const spd2=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
+        const shooter2=a.owner==='player'?player:enemy;
+        const dx2=shooter2.x-tgt.x, dy2=shooter2.y-tgt.y;
+        const d2=Math.sqrt(dx2*dx2+dy2*dy2)||1;
+        a.vx=(dx2/d2)*spd2; a.vy=(dy2/d2)*spd2;
         a.owner=a.owner==='player'?'enemy':'player';
         a.life=5;
         continue;
       }
+    }
+    if(Math.sqrt(dx*dx+dy*dy)<tgt.r+4){
       const sp=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
       tgt.vx+=(a.vx/sp)*PUSH_SCALE; tgt.vy+=(a.vy/sp)*PUSH_SCALE;
       arrows.splice(i,1);
@@ -473,10 +482,11 @@ function checkSwordBlade(att,tgt,angle,sw,isPlayer,swordLen){
       const bx=att.x+Math.cos(angle)*d, by=att.y+Math.sin(angle)*d;
       const dx=bx-tgt.x, dy=by-tgt.y;
       if(Math.sqrt(dx*dx+dy*dy)<tgt.r+SWORD_W/2){
-        // push attacker back
+        // push attacker back and deal reflected damage
         const nx=(att.x-tgt.x), ny=(att.y-tgt.y);
         const nd=Math.sqrt(nx*nx+ny*ny)||1;
         att.vx+=(nx/nd)*PUSH_SCALE*1.2; att.vy+=(ny/nd)*PUSH_SCALE*1.2;
+        damage(att, dmg);
         sw.hitDealt=true;
         break;
       }
@@ -635,29 +645,28 @@ function drawShield(ctx,b,isPlayer){
     : Math.atan2(player.y-b.y, player.x-b.x);
 
   const blocking=sh.blocking;
-  const d=b.r+10;
 
   ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(toEnemy);
 
-  if(blocking){
-    // glowing active shield
-    const glow=ctx.createRadialGradient(d,0,2,d,0,22);
-    glow.addColorStop(0,'rgba(255,220,80,0.6)');
-    glow.addColorStop(1,'rgba(255,180,0,0)');
-    ctx.beginPath(); ctx.arc(d,0,22,0,Math.PI*2); ctx.fillStyle=glow; ctx.fill();
+  // Draw ) shape: a quadratic bezier curve like a parenthesis
+  // positioned just outside the ball edge, facing enemy
+  const x0=b.r+10, h=28, bulge=14;
 
-    ctx.strokeStyle='#ffe066'; ctx.lineWidth=4;
-    ctx.beginPath(); ctx.arc(d,0,18,-Math.PI*.7,Math.PI*.7); ctx.stroke();
-    ctx.strokeStyle='rgba(255,255,200,0.7)'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(d,0,18,-Math.PI*.5,Math.PI*.5); ctx.stroke();
+  if(blocking){
+    // glow
+    ctx.shadowColor='rgba(255,220,80,0.9)'; ctx.shadowBlur=18;
+    ctx.strokeStyle='#ffe066'; ctx.lineWidth=5; ctx.lineCap='round';
   } else {
-    // idle shield — dimmer
-    const cooldownFrac = sh.timer/SHIELD_CYCLE;
-    ctx.globalAlpha=0.35+cooldownFrac*0.45;
-    ctx.strokeStyle='#a07820'; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.arc(d,0,18,-Math.PI*.7,Math.PI*.7); ctx.stroke();
-    ctx.globalAlpha=1;
+    const f=sh.timer/SHIELD_CYCLE;
+    ctx.globalAlpha=0.3+f*0.5;
+    ctx.strokeStyle='#b08820'; ctx.lineWidth=4; ctx.lineCap='round';
   }
+
+  ctx.beginPath();
+  ctx.moveTo(x0, -h);
+  ctx.quadraticCurveTo(x0+bulge, 0, x0, h);
+  ctx.stroke();
+  ctx.shadowBlur=0; ctx.globalAlpha=1;
 
   ctx.restore();
 
@@ -671,7 +680,6 @@ function drawShield(ctx,b,isPlayer){
     ctx.stroke();
     ctx.restore();
   } else {
-    // block time remaining arc
     const frac=sh.blockTimer/SHIELD_DURATION;
     ctx.save(); ctx.translate(b.x,b.y);
     ctx.strokeStyle='rgba(255,230,80,0.9)'; ctx.lineWidth=3;
