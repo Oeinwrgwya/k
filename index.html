@@ -200,14 +200,14 @@ const SWORD_LEN=68;
 const SWORD_W=5;
 const ARROW_INTERVAL=1.8;
 const WALL_BOUNCE=0.95;
-const PUSH_SCALE=180;
+const PUSH_SCALE=280;
 const SWORD_ATTACK_DIST = SWORD_LEN + R + R + 10;
 
 let playerWeapon=null, enemyWeapon=null;
 let playerUpgrade=null; // 'curved' | 'wide' | 'wide_bow' | 'dark_bow'
 let roundCount=0;
 let selectedUpgradeId=null;
-let gameRunning=false, animFrame=null, lastTime=0;
+let gameRunning=false, animFrame=null, lastTime=0, gameEnded=false;
 let player, enemy, arrows, arrowTimers, lastHit;
 
 // ── upgrade definitions ──
@@ -248,7 +248,22 @@ const UPGRADES = {
       fireRateMult:1, tripleShot:true, spreadAngles:[-0.42,-0.21,0.21,0.42]
     }
   ],
-  shield: []  // no upgrades yet
+  shield: [
+    {
+      id:'dark_shield',
+      name:'Dark Shield',
+      icon:'🌑',
+      desc:'A dark barrier surrounds the ball — creates a force field slightly further out that blocks all attacks and projectiles.',
+      stats:[{t:'360° block field',g:true},{t:'Longer cooldown',g:false}],
+    },
+    {
+      id:'spike_shield',
+      name:'Spike Shield',
+      icon:'⚙️',
+      desc:'Spikes on the shield deal 1 damage on contact, and reflected sword hits deal +1 extra damage.',
+      stats:[{t:'Contact damage',g:true},{t:'Reflect +1 dmg',g:true}],
+    }
+  ]
 };
 
 function selectWeapon(w){
@@ -274,6 +289,7 @@ function makeSword(){
 function getMaxHP(weapon){ return weapon==='bow'?MAX_HP_BOW:weapon==='shield'?MAX_HP_SHIELD:MAX_HP_SWORD; }
 
 function initBalls(){
+  gameEnded=false;
   if(playerWeapon==='sword') enemyWeapon='bow';
   else if(playerWeapon==='bow') enemyWeapon='sword';
   else { enemyWeapon=['sword','bow'][Math.floor(Math.random()*2)]; }
@@ -369,11 +385,22 @@ function update(dt){
     const dx=a.x-tgt.x,dy=a.y-tgt.y;
     // shield collision — check against shield ) position first
     if(tgt.weapon==='shield' && tgt.shield && tgt.shield.blocking){
-      const toEnemyA=tgt===player?Math.atan2(enemy.y-tgt.y,enemy.x-tgt.x):Math.atan2(player.y-tgt.y,player.x-tgt.x);
-      const sx=tgt.x+Math.cos(toEnemyA)*(tgt.r+10);
-      const sy=tgt.y+Math.sin(toEnemyA)*(tgt.r+10);
-      const sdx=a.x-sx, sdy=a.y-sy;
-      if(Math.sqrt(sdx*sdx+sdy*sdy)<22){
+      const isPlayerShield=tgt===player;
+      const upgS=(isPlayerShield&&playerUpgrade)?UPGRADES.shield.find(u=>u.id===playerUpgrade):null;
+      const isDark=upgS&&upgS.id==='dark_shield';
+      let hit=false;
+      if(isDark){
+        // full field around ball
+        const fdx=a.x-tgt.x, fdy=a.y-tgt.y;
+        if(Math.sqrt(fdx*fdx+fdy*fdy)<tgt.r+32) hit=true;
+      } else {
+        const toEnemyA=tgt===player?Math.atan2(enemy.y-tgt.y,enemy.x-tgt.x):Math.atan2(player.y-tgt.y,player.x-tgt.x);
+        const sx=tgt.x+Math.cos(toEnemyA)*(tgt.r+10);
+        const sy=tgt.y+Math.sin(toEnemyA)*(tgt.r+10);
+        const sdx=a.x-sx, sdy=a.y-sy;
+        if(Math.sqrt(sdx*sdx+sdy*sdy)<38) hit=true;
+      }
+      if(hit){
         const spd2=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
         const shooter2=a.owner==='player'?player:enemy;
         const dx2=shooter2.x-tgt.x, dy2=shooter2.y-tgt.y;
@@ -386,7 +413,7 @@ function update(dt){
     }
     if(Math.sqrt(dx*dx+dy*dy)<tgt.r+4){
       const sp=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
-      tgt.vx+=(a.vx/sp)*PUSH_SCALE; tgt.vy+=(a.vy/sp)*PUSH_SCALE;
+      tgt.vx=(a.vx/sp)*PUSH_SCALE; tgt.vy=(a.vy/sp)*PUSH_SCALE;
       arrows.splice(i,1);
       damage(tgt, 1);
     }
@@ -461,12 +488,22 @@ function easeOut(t){ return 1-(1-t)*(1-t); }
 
 function updateShield(b, dt){
   const sh=b.shield;
+  const isPlayer=b===player;
+  const upg=(isPlayer&&playerUpgrade)?UPGRADES.shield.find(u=>u.id===playerUpgrade):null;
+  const cycle = upg&&upg.id==='dark_shield' ? SHIELD_CYCLE+2 : SHIELD_CYCLE;
   if(sh.blocking){
     sh.blockTimer-=dt;
     if(sh.blockTimer<=0){ sh.blocking=false; sh.timer=0; }
   } else {
     sh.timer+=dt;
-    if(sh.timer>=SHIELD_CYCLE){ sh.blocking=true; sh.blockTimer=SHIELD_DURATION; sh.timer=0; }
+    if(sh.timer>=cycle){ sh.blocking=true; sh.blockTimer=SHIELD_DURATION; sh.timer=0; }
+  }
+  // spike shield: deal contact damage to enemy on collision
+  if(upg&&upg.id==='spike_shield'){
+    const tgt=b===player?enemy:player;
+    const dx=tgt.x-b.x, dy=tgt.y-b.y;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<b.r+tgt.r+8){ damage(tgt,1); }
   }
 }
 
@@ -477,16 +514,21 @@ function checkSwordBlade(att,tgt,angle,sw,isPlayer,swordLen){
   const dmg = upg ? upg.damageMult : 1;
   // if target is blocking with shield, negate damage and push attacker back
   if(tgt.shield && tgt.shield.blocking){
+    const isPlayerShield=tgt===player;
+    const upgS2=(isPlayerShield&&playerUpgrade)?UPGRADES.shield.find(u=>u.id===playerUpgrade):null;
+    const isDark2=upgS2&&upgS2.id==='dark_shield';
+    const isSpike=upgS2&&upgS2.id==='spike_shield';
+    const blockR = isDark2 ? tgt.r+32 : tgt.r+SWORD_W/2;
     for(let t=0;t<=1;t+=0.1){
       const d=s0+(s1-s0)*t;
       const bx=att.x+Math.cos(angle)*d, by=att.y+Math.sin(angle)*d;
       const dx=bx-tgt.x, dy=by-tgt.y;
-      if(Math.sqrt(dx*dx+dy*dy)<tgt.r+SWORD_W/2){
-        // push attacker back and deal reflected damage
+      if(Math.sqrt(dx*dx+dy*dy)<blockR){
         const nx=(att.x-tgt.x), ny=(att.y-tgt.y);
         const nd=Math.sqrt(nx*nx+ny*ny)||1;
-        att.vx+=(nx/nd)*PUSH_SCALE*1.2; att.vy+=(ny/nd)*PUSH_SCALE*1.2;
-        damage(att, dmg);
+        att.vx=(nx/nd)*PUSH_SCALE*1.4; att.vy=(ny/nd)*PUSH_SCALE*1.4;
+        const reflectDmg = isSpike ? dmg+1 : dmg;
+        damage(att, reflectDmg);
         sw.hitDealt=true;
         break;
       }
@@ -500,7 +542,7 @@ function checkSwordBlade(att,tgt,angle,sw,isPlayer,swordLen){
     if(Math.sqrt(dx*dx+dy*dy)<tgt.r+SWORD_W/2){
       const nx=(tgt.x-att.x), ny=(tgt.y-att.y);
       const nd=Math.sqrt(nx*nx+ny*ny)||1;
-      tgt.vx+=(nx/nd)*PUSH_SCALE; tgt.vy+=(ny/nd)*PUSH_SCALE;
+      tgt.vx=(nx/nd)*PUSH_SCALE; tgt.vy=(ny/nd)*PUSH_SCALE;
       damage(tgt, dmg);
       sw.hitDealt=true;
       break;
@@ -640,41 +682,99 @@ function drawSword(ctx,b,isPlayer){
 
 function drawShield(ctx,b,isPlayer){
   const sh=b.shield;
+  const upg=(isPlayer&&playerUpgrade)?UPGRADES.shield.find(u=>u.id===playerUpgrade):null;
+  const isDark=upg&&upg.id==='dark_shield';
+  const isSpike=upg&&upg.id==='spike_shield';
+  const blocking=sh.blocking;
+  const cycle=isDark?SHIELD_CYCLE+2:SHIELD_CYCLE;
+
   const toEnemy= b===player
     ? Math.atan2(enemy.y-b.y, enemy.x-b.x)
     : Math.atan2(player.y-b.y, player.x-b.x);
 
-  const blocking=sh.blocking;
+  if(isDark){
+    // dark shield: draw ) like normal but darker, PLUS yellow field circle
+    ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(toEnemy);
+    const x0d=b.r+10, hd=28, bulged=14;
+    if(blocking){
+      ctx.shadowColor='rgba(180,140,0,0.7)'; ctx.shadowBlur=10;
+      ctx.strokeStyle='#7a6010'; ctx.lineWidth=5; ctx.lineCap='round';
+    } else {
+      const fd=sh.timer/cycle;
+      ctx.globalAlpha=0.25+fd*0.35;
+      ctx.strokeStyle='#4a3a08'; ctx.lineWidth=4; ctx.lineCap='round';
+    }
+    ctx.beginPath();
+    ctx.moveTo(x0d,-hd);
+    ctx.quadraticCurveTo(x0d+bulged,0,x0d,hd);
+    ctx.stroke();
+    ctx.shadowBlur=0; ctx.globalAlpha=1;
+    ctx.restore();
 
-  ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(toEnemy);
-
-  // Draw ) shape: a quadratic bezier curve like a parenthesis
-  // positioned just outside the ball edge, facing enemy
-  const x0=b.r+10, h=28, bulge=14;
-
-  if(blocking){
-    // glow
-    ctx.shadowColor='rgba(255,220,80,0.9)'; ctx.shadowBlur=18;
-    ctx.strokeStyle='#ffe066'; ctx.lineWidth=5; ctx.lineCap='round';
+    // yellow field circle
+    const fieldR=b.r+40;
+    if(blocking){
+      const glow=ctx.createRadialGradient(b.x,b.y,b.r+20,b.x,b.y,fieldR+6);
+      glow.addColorStop(0,'rgba(255,220,80,0.15)');
+      glow.addColorStop(1,'rgba(255,180,0,0)');
+      ctx.beginPath(); ctx.arc(b.x,b.y,fieldR+6,0,Math.PI*2);
+      ctx.fillStyle=glow; ctx.fill();
+      ctx.strokeStyle='rgba(255,210,60,0.8)'; ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.arc(b.x,b.y,fieldR,0,Math.PI*2); ctx.stroke();
+    } else {
+      const frac=sh.timer/cycle;
+      ctx.globalAlpha=0.12+frac*0.25;
+      ctx.strokeStyle='#c9a227'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(b.x,b.y,fieldR,0,Math.PI*2); ctx.stroke();
+      ctx.globalAlpha=1;
+    }
   } else {
-    const f=sh.timer/SHIELD_CYCLE;
-    ctx.globalAlpha=0.3+f*0.5;
-    ctx.strokeStyle='#b08820'; ctx.lineWidth=4; ctx.lineCap='round';
+    // normal ) or spike shield
+    ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(toEnemy);
+    const x0=b.r+10, h=28, bulge=14;
+
+    if(blocking){
+      ctx.shadowColor=isSpike?'rgba(255,80,80,0.9)':'rgba(255,220,80,0.9)';
+      ctx.shadowBlur=18;
+      ctx.strokeStyle=isSpike?'#ff6060':'#ffe066';
+      ctx.lineWidth=5; ctx.lineCap='round';
+    } else {
+      const f=sh.timer/cycle;
+      ctx.globalAlpha=0.3+f*0.5;
+      ctx.strokeStyle=isSpike?'#882020':'#b08820';
+      ctx.lineWidth=4; ctx.lineCap='round';
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(x0,-h);
+    ctx.quadraticCurveTo(x0+bulge,0,x0,h);
+    ctx.stroke();
+    ctx.shadowBlur=0;
+
+    // draw spikes on spike shield
+    if(isSpike){
+      ctx.strokeStyle=blocking?'#ff9090':'rgba(180,60,60,0.6)';
+      ctx.lineWidth=2; ctx.lineCap='round';
+      const spikeCount=5;
+      for(let i=0;i<spikeCount;i++){
+        const t=i/(spikeCount-1);
+        const px=x0+bulge*Math.sin(Math.PI*t);
+        const py=-h+h*2*t;
+        const outx=px+8, outy=py;
+        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(outx,outy); ctx.stroke();
+      }
+    }
+
+    ctx.globalAlpha=1;
+    ctx.restore();
   }
-
-  ctx.beginPath();
-  ctx.moveTo(x0, -h);
-  ctx.quadraticCurveTo(x0+bulge, 0, x0, h);
-  ctx.stroke();
-  ctx.shadowBlur=0; ctx.globalAlpha=1;
-
-  ctx.restore();
 
   // cooldown arc around ball
   if(!blocking){
-    const frac=sh.timer/SHIELD_CYCLE;
+    const frac=sh.timer/cycle;
     ctx.save(); ctx.translate(b.x,b.y);
-    ctx.strokeStyle='rgba(255,200,50,0.5)'; ctx.lineWidth=2;
+    ctx.strokeStyle=isDark?'rgba(160,60,255,0.5)':isSpike?'rgba(255,80,80,0.5)':'rgba(255,200,50,0.5)';
+    ctx.lineWidth=2;
     ctx.beginPath();
     ctx.arc(0,0,b.r+3,-Math.PI/2,-Math.PI/2+frac*Math.PI*2);
     ctx.stroke();
@@ -682,7 +782,8 @@ function drawShield(ctx,b,isPlayer){
   } else {
     const frac=sh.blockTimer/SHIELD_DURATION;
     ctx.save(); ctx.translate(b.x,b.y);
-    ctx.strokeStyle='rgba(255,230,80,0.9)'; ctx.lineWidth=3;
+    ctx.strokeStyle=isDark?'rgba(180,80,255,0.9)':isSpike?'rgba(255,100,100,0.9)':'rgba(255,230,80,0.9)';
+    ctx.lineWidth=3;
     ctx.beginPath();
     ctx.arc(0,0,b.r+3,-Math.PI/2,-Math.PI/2+frac*Math.PI*2);
     ctx.stroke();
@@ -723,8 +824,8 @@ function drawBow(ctx,b){
 }
 
 function endGame(result){
-  if(!gameRunning) return;
-  gameRunning=false; cancelAnimationFrame(animFrame);
+  if(!gameRunning||gameEnded) return;
+  gameEnded=true; gameRunning=false; cancelAnimationFrame(animFrame); animFrame=null;
   setTimeout(()=>{
     roundCount++;
     if(roundCount===1){
@@ -736,12 +837,21 @@ function endGame(result){
 }
 
 function showResult(result){
-  const t=document.getElementById('result-title');
-  const s=document.getElementById('result-sub');
-  if(result==='win'){ t.textContent='Victory!'; t.className='result-title win'; s.textContent='Enemy defeated'; }
-  else if(result==='lose'){ t.textContent='Defeat'; t.className='result-title lose'; s.textContent='Try again'; }
-  else { t.textContent='Draw'; t.className='result-title draw'; s.textContent='Both fell'; }
-  showScreen('result-screen');
+  const title = result==='win'?'Victory!':result==='lose'?'Defeat':'Draw';
+  const sub   = result==='win'?'Enemy defeated':result==='lose'?'Try again':'Both fell';
+  const cls   = result==='win'?'win':result==='lose'?'lose':'draw';
+  // hide all screens
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  // build result screen content fresh
+  const screen = document.getElementById('result-screen');
+  if(!screen) return;
+  screen.innerHTML = `
+    <div class="result-title ${cls}">${title}</div>
+    <div class="result-sub">${sub}</div>
+    <button class="btn-rematch" onclick="rematch()">Rematch</button>
+    <button class="btn-menu" onclick="goMenu()">Main Menu</button>
+  `;
+  screen.classList.remove('hidden');
 }
 
 // ── UPGRADE SCREEN ──
@@ -751,40 +861,38 @@ function showUpgradeScreen(pendingResult){
     showResult(pendingResult);
     return;
   }
-  const grid = document.getElementById('upgrade-grid');
-  grid.innerHTML='';
   selectedUpgradeId=null;
-  document.getElementById('btn-upgrade').classList.remove('visible');
+  const subText = pendingResult==='win'?'You won — upgrade and fight again':pendingResult==='lose'?'You lost — pick your upgrade':'Choose your path';
 
-  upgrades.forEach(upg=>{
-    const card=document.createElement('div');
-    card.className='upgrade-card';
-    card.id='upg-'+upg.id;
+  const cardsHtml = upgrades.map(upg=>{
     const stats=upg.stats.map(s=>`<span class="stat-pill ${s.g?'stat-good':'stat-bad'}">${s.t}</span>`).join('');
-    card.innerHTML=`
+    return `<div class="upgrade-card" id="upg-${upg.id}" onclick="selectUpgrade('${upg.id}')">
       <div class="upgrade-badge">✓</div>
       <span class="upgrade-icon">${upg.icon}</span>
       <div class="upgrade-name">${upg.name}</div>
       <div class="upgrade-desc">${upg.desc}</div>
       <div class="upgrade-stats">${stats}</div>
-    `;
-    card.onclick=()=>selectUpgrade(upg.id);
-    grid.appendChild(card);
-  });
+    </div>`;
+  }).join('');
 
-  const sub=document.getElementById('upgrade-sub');
-  if(pendingResult==='win') sub.textContent='You won — upgrade and fight again';
-  else if(pendingResult==='lose') sub.textContent='You lost — pick your upgrade';
-  else sub.textContent='Choose your path';
-
-  showScreen('upgrade-screen');
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  const screen = document.getElementById('upgrade-screen');
+  screen.innerHTML = `
+    <div class="upgrade-title">Upgrade Your Weapon</div>
+    <div class="upgrade-sub">${subText}</div>
+    <div class="upgrade-grid">${cardsHtml}</div>
+    <button class="btn-upgrade visible" id="btn-upgrade-hidden" style="opacity:0;pointer-events:none" onclick="applyUpgrade()">Upgrade &amp; Fight</button>
+  `;
+  screen.classList.remove('hidden');
 }
 
 function selectUpgrade(id){
   selectedUpgradeId=id;
   document.querySelectorAll('.upgrade-card').forEach(c=>c.classList.remove('selected'));
-  document.getElementById('upg-'+id).classList.add('selected');
-  document.getElementById('btn-upgrade').classList.add('visible');
+  const card=document.getElementById('upg-'+id);
+  if(card) card.classList.add('selected');
+  const btn=document.getElementById('btn-upgrade-hidden');
+  if(btn){ btn.style.opacity='1'; btn.style.pointerEvents='all'; }
 }
 
 function applyUpgrade(){
