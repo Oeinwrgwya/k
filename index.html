@@ -204,7 +204,7 @@ const PUSH_SCALE=280;
 const SWORD_ATTACK_DIST = SWORD_LEN + R + R + 10;
 
 let playerWeapon=null, enemyWeapon=null;
-let playerUpgrade=null; // 'curved' | 'wide' | 'wide_bow' | 'dark_bow'
+let playerUpgrade=null, enemyUpgrade=null; // 'curved' | 'wide' | 'wide_bow' | 'dark_bow'
 let roundCount=0;
 let selectedUpgradeId=null;
 let gameRunning=false, animFrame=null, lastTime=0, gameEnded=false;
@@ -290,9 +290,11 @@ function getMaxHP(weapon){ return weapon==='bow'?MAX_HP_BOW:weapon==='shield'?MA
 
 function initBalls(){
   gameEnded=false;
-  if(playerWeapon==='sword') enemyWeapon=['bow','shield'][Math.floor(Math.random()*2)];
-  else if(playerWeapon==='bow') enemyWeapon=['sword','shield'][Math.floor(Math.random()*2)];
-  else { enemyWeapon=['sword','bow'][Math.floor(Math.random()*2)]; }
+  if(roundCount===0){
+    if(playerWeapon==='sword') enemyWeapon=['bow','shield'][Math.floor(Math.random()*2)];
+    else if(playerWeapon==='bow') enemyWeapon=['sword','shield'][Math.floor(Math.random()*2)];
+    else { enemyWeapon=['sword','bow'][Math.floor(Math.random()*2)]; }
+  }
   const spd=150;
   function rv(){ const a=Math.random()*Math.PI*2; return {vx:Math.cos(a)*spd,vy:Math.sin(a)*spd}; }
   const pv=rv(), ev=rv();
@@ -313,16 +315,16 @@ function startGame(){
   showScreen('arena-screen');
   initBalls();
   gameRunning=true; lastTime=performance.now();
-  animFrame=requestAnimationFrame(loop);
+  animFrame=setInterval(loop, 1000/60);
 }
 
-function loop(ts){
+function loop(){
   if(!gameRunning) return;
-  const dt=Math.min((ts-lastTime)/1000,.05);
-  lastTime=ts;
+  const now=performance.now();
+  const dt=Math.min((now-lastTime)/1000,.05);
+  lastTime=now;
   update(dt);
   draw();
-  animFrame=requestAnimationFrame(loop);
 }
 
 function angleDiff(a,b){ let d=((b-a+Math.PI*3)%(Math.PI*2))-Math.PI; return d; }
@@ -363,13 +365,16 @@ function update(dt){
 
   // bow shooting — enemy
   if(enemy.weapon==='bow'){
+    const eupg=enemyUpgrade?UPGRADES.bow.find(u=>u.id===enemyUpgrade):null;
+    const einterval=eupg?ARROW_INTERVAL/(eupg.fireRateMult||1):ARROW_INTERVAL;
     arrowTimers.enemy+=dt;
-    if(arrowTimers.enemy>=ARROW_INTERVAL){
+    if(arrowTimers.enemy>=einterval){
       arrowTimers.enemy=0;
       arrowTimers.enemyShot=(arrowTimers.enemyShot||0)+1;
-      if(arrowTimers.enemyShot>=3){
+      const edoTriple=eupg?eupg.tripleShot:true;
+      if(edoTriple&&arrowTimers.enemyShot>=3){
         arrowTimers.enemyShot=0;
-        shootTriple(enemy,player,'enemy',[-0.28,0.28]);
+        shootTriple(enemy,player,'enemy',eupg?eupg.spreadAngles:[-0.28,0.28]);
       } else {
         shootArrow(enemy,player,'enemy');
       }
@@ -446,7 +451,7 @@ function ballCollide(a,b){
 
 function updateSword(att, tgt, dt, isPlayer){
   const sw=att.sword;
-  const upg = (isPlayer && playerUpgrade) ? UPGRADES.sword.find(u=>u.id===playerUpgrade) : null;
+  const upg = isPlayer ? (playerUpgrade?UPGRADES.sword.find(u=>u.id===playerUpgrade):null) : (enemyUpgrade?UPGRADES.sword.find(u=>u.id===enemyUpgrade):null);
   const dashMult = upg ? upg.dashMult : 1;
   const swordLen = upg ? upg.swordLen : SWORD_LEN;
 
@@ -489,7 +494,7 @@ function easeOut(t){ return 1-(1-t)*(1-t); }
 function updateShield(b, dt){
   const sh=b.shield;
   const isPlayer=b===player;
-  const upg=(isPlayer&&playerUpgrade)?UPGRADES.shield.find(u=>u.id===playerUpgrade):null;
+  const upg=isPlayer?(playerUpgrade?UPGRADES.shield.find(u=>u.id===playerUpgrade):null):(enemyUpgrade?UPGRADES.shield.find(u=>u.id===enemyUpgrade):null);
   const cycle = upg&&upg.id==='dark_shield' ? SHIELD_CYCLE+2 : SHIELD_CYCLE;
   if(sh.blocking){
     sh.blockTimer-=dt;
@@ -510,7 +515,7 @@ function updateShield(b, dt){
 function checkSwordBlade(att,tgt,angle,sw,isPlayer,swordLen){
   const len = swordLen || SWORD_LEN;
   const s0=att.r, s1=att.r+len;
-  const upg = (isPlayer && playerUpgrade) ? UPGRADES.sword.find(u=>u.id===playerUpgrade) : null;
+  const upg = isPlayer ? (playerUpgrade?UPGRADES.sword.find(u=>u.id===playerUpgrade):null) : (enemyUpgrade?UPGRADES.sword.find(u=>u.id===enemyUpgrade):null);
   const dmg = upg ? upg.damageMult : 1;
   // if target is blocking with shield, negate damage and push attacker back
   if(tgt.shield && tgt.shield.blocking){
@@ -632,7 +637,7 @@ function drawBallBody(ctx,b){
 function drawSword(ctx,b,isPlayer){
   const sw=b.sword;
   const angle=sw.angle;
-  const upg = (isPlayer && playerUpgrade) ? UPGRADES.sword.find(u=>u.id===playerUpgrade) : null;
+  const upg = isPlayer ? (playerUpgrade?UPGRADES.sword.find(u=>u.id===playerUpgrade):null) : (enemyUpgrade?UPGRADES.sword.find(u=>u.id===enemyUpgrade):null);
   const swordLen = upg ? upg.swordLen : SWORD_LEN;
   const isCurved = upg && upg.id==='curved';
   const isWide   = upg && upg.id==='wide';
@@ -682,7 +687,7 @@ function drawSword(ctx,b,isPlayer){
 
 function drawShield(ctx,b,isPlayer){
   const sh=b.shield;
-  const upg=(isPlayer&&playerUpgrade)?UPGRADES.shield.find(u=>u.id===playerUpgrade):null;
+  const upg=isPlayer?(playerUpgrade?UPGRADES.shield.find(u=>u.id===playerUpgrade):null):(enemyUpgrade?UPGRADES.shield.find(u=>u.id===enemyUpgrade):null);
   const isDark=upg&&upg.id==='dark_shield';
   const isSpike=upg&&upg.id==='spike_shield';
   const blocking=sh.blocking;
@@ -793,7 +798,7 @@ function drawShield(ctx,b,isPlayer){
 
 function drawBow(ctx,b){
   const isPlayer = b===player;
-  const upg = (isPlayer && playerUpgrade) ? UPGRADES.bow.find(u=>u.id===playerUpgrade) : null;
+  const upg = isPlayer ? (playerUpgrade?UPGRADES.bow.find(u=>u.id===playerUpgrade):null) : (enemyUpgrade?UPGRADES.bow.find(u=>u.id===enemyUpgrade):null);
 
   ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.aimAngle);
   const d=b.r+14;
@@ -829,6 +834,9 @@ function endGame(result){
   setTimeout(()=>{
     roundCount++;
     if(roundCount===1){
+      // pick random enemy upgrade
+      const eUpgrades=UPGRADES[enemyWeapon]||[];
+      enemyUpgrade=eUpgrades.length>0?eUpgrades[Math.floor(Math.random()*eUpgrades.length)].id:null;
       showUpgradeScreen(result);
     } else {
       showResult(result);
@@ -905,12 +913,12 @@ function rematch(){
   showScreen('arena-screen');
   initBalls();
   gameRunning=true; lastTime=performance.now();
-  animFrame=requestAnimationFrame(loop);
+  animFrame=setInterval(loop, 1000/60);
 }
 
 function goMenu(){
   showScreen('menu-screen');
-  playerWeapon=null; playerUpgrade=null; roundCount=0;
+  playerWeapon=null; playerUpgrade=null; enemyUpgrade=null; roundCount=0;
   document.querySelectorAll('.weapon-card').forEach(c=>c.classList.remove('selected'));
   document.getElementById('btn-fight').classList.remove('visible');
 }
