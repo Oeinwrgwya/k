@@ -290,8 +290,8 @@ function getMaxHP(weapon){ return weapon==='bow'?MAX_HP_BOW:weapon==='shield'?MA
 
 function initBalls(){
   gameEnded=false;
-  if(playerWeapon==='sword') enemyWeapon='bow';
-  else if(playerWeapon==='bow') enemyWeapon='sword';
+  if(playerWeapon==='sword') enemyWeapon=['bow','shield'][Math.floor(Math.random()*2)];
+  else if(playerWeapon==='bow') enemyWeapon=['sword','shield'][Math.floor(Math.random()*2)];
   else { enemyWeapon=['sword','bow'][Math.floor(Math.random()*2)]; }
   const spd=150;
   function rv(){ const a=Math.random()*Math.PI*2; return {vx:Math.cos(a)*spd,vy:Math.sin(a)*spd}; }
