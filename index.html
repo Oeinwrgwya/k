@@ -231,11 +231,11 @@ const UPGRADES2 = {
   ],
   bow: [
     {
-      id:'fast_arrows',
+      id:'fast_fire',
       name:'Swift Arrows',
       icon:'🏹',
-      desc:'Arrows fly significantly faster across the arena.',
-      stats:[{t:'Arrow speed +60%',g:true}],
+      desc:'Draw speed increased — fires 50% faster.',
+      stats:[{t:'Fire rate +50%',g:true}],
     },
     {
       id:'homing',
@@ -294,7 +294,7 @@ const UPGRADES = {
     {
       id:'dark_bow',
       name:'Dark Bow',
-      icon:'🕳',
+      icon:'🪃',
       desc:'An ancient dark bow — fires 4 side arrows in a tight fan around the main shot.',
       stats:[{t:'5 arrows per salvo',g:true},{t:'Fire rate normal',g:true}],
       fireRateMult:1, tripleShot:true, spreadAngles:[-0.42,-0.21,0.21,0.42]
@@ -400,7 +400,8 @@ function update(dt){
   // bow shooting — player
   if(player.weapon==='bow'){
     const upg = playerUpgrade ? UPGRADES.bow.find(u=>u.id===playerUpgrade) : null;
-    const interval = upg ? ARROW_INTERVAL/(upg.fireRateMult||1) : ARROW_INTERVAL;
+    const upg2bow = playerUpgrade2 ? UPGRADES2.bow.find(u=>u.id===playerUpgrade2) : null;
+    const interval = (upg ? ARROW_INTERVAL/(upg.fireRateMult||1) : ARROW_INTERVAL) / (upg2bow&&upg2bow.id==='fast_fire'?1.5:1);
     arrowTimers.player+=dt;
     if(arrowTimers.player>=interval){
       arrowTimers.player=0;
@@ -418,7 +419,8 @@ function update(dt){
   // bow shooting — enemy
   if(enemy.weapon==='bow'){
     const eupg=enemyUpgrade?UPGRADES.bow.find(u=>u.id===enemyUpgrade):null;
-    const einterval=eupg?ARROW_INTERVAL/(eupg.fireRateMult||1):ARROW_INTERVAL;
+    const eupg2=enemyUpgrade2?UPGRADES2.bow.find(u=>u.id===enemyUpgrade2):null;
+    const einterval=(eupg?ARROW_INTERVAL/(eupg.fireRateMult||1):ARROW_INTERVAL)/(eupg2&&eupg2.id==='fast_fire'?1.5:1);
     arrowTimers.enemy+=dt;
     if(arrowTimers.enemy>=einterval){
       arrowTimers.enemy=0;
@@ -437,13 +439,13 @@ function update(dt){
     const a=arrows[i];
     a.x+=a.vx*dt; a.y+=a.vy*dt; a.life-=dt;
     // homing: gently steer toward target
-    if(a.homing){
+    if(a.homing && a.life>4.2){
       const htgt=a.owner==='player'?enemy:player;
       const hdx=htgt.x-a.x, hdy=htgt.y-a.y;
       const hd=Math.sqrt(hdx*hdx+hdy*hdy)||1;
-      a.vx+=(hdx/hd)*180*dt; a.vy+=(hdy/hd)*180*dt;
+      a.vx+=(hdx/hd)*600*dt; a.vy+=(hdy/hd)*600*dt;
       const spd2=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
-      if(spd2>360){ a.vx=a.vx/spd2*360; a.vy=a.vy/spd2*360; }
+      if(spd2>400){ a.vx=a.vx/spd2*400; a.vy=a.vy/spd2*400; }
     }
     if(a.x<0||a.x>W||a.y<0||a.y>H||a.life<=0){arrows.splice(i,1);continue;}
     const tgt=a.owner==='player'?enemy:player;
@@ -482,7 +484,7 @@ function update(dt){
     }
     if(Math.sqrt(dx*dx+dy*dy)<tgt.r+4){
       const sp=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
-      tgt.vx=(a.vx/sp)*PUSH_SCALE; tgt.vy=(a.vy/sp)*PUSH_SCALE;
+      tgt.vx=(a.vx/sp)*PUSH_SCALE*0.5; tgt.vy=(a.vy/sp)*PUSH_SCALE*0.5;
       arrows.splice(i,1);
       damage(tgt, 1);
     }
@@ -584,7 +586,7 @@ function checkSwordBlade(att,tgt,angle,sw,isPlayer,swordLen){
   const upg2c=isPlayer?(playerUpgrade2?UPGRADES2.sword.find(u=>u.id===playerUpgrade2):null):(enemyUpgrade2?UPGRADES2.sword.find(u=>u.id===enemyUpgrade2):null);
   const baseDmg = upg ? upg.damageMult : 1;
   const crit = upg2c&&upg2c.id==='crit'&&Math.random()<0.25;
-  const dmg = crit ? baseDmg+1 : baseDmg;
+  const dmg = crit ? baseDmg+1 : baseDmg; // crit adds +1
   // if target is blocking with shield, negate damage and push attacker back
   if(tgt.shield && tgt.shield.blocking){
     const isPlayerShield=tgt===player;
@@ -600,7 +602,7 @@ function checkSwordBlade(att,tgt,angle,sw,isPlayer,swordLen){
         const nx=(att.x-tgt.x), ny=(att.y-tgt.y);
         const nd=Math.sqrt(nx*nx+ny*ny)||1;
         att.vx=(nx/nd)*PUSH_SCALE*1.4; att.vy=(ny/nd)*PUSH_SCALE*1.4;
-        const reflectDmg = isSpike ? dmg+1 : dmg;
+        const reflectDmg = dmg;
         damage(att, reflectDmg);
         sw.hitDealt=true;
         break;
@@ -638,7 +640,7 @@ function shootArrow(from,to,owner){
   const d=Math.sqrt(dx*dx+dy*dy)||1;
   const isP=from===player;
   const upg2a=isP?(playerUpgrade2?UPGRADES2.bow.find(u=>u.id===playerUpgrade2):null):(enemyUpgrade2?UPGRADES2.bow.find(u=>u.id===enemyUpgrade2):null);
-  const spd=upg2a&&upg2a.id==='fast_arrows'?512:320;
+  const spd=320;
   const homing=upg2a&&upg2a.id==='homing';
   arrows.push({x:from.x+(dx/d)*(from.r+10),y:from.y+(dy/d)*(from.r+10),vx:(dx/d)*spd,vy:(dy/d)*spd,owner,life:5,homing});
 }
@@ -647,7 +649,7 @@ function shootTriple(from,to,owner,spreadAngles){
   const dx=to.x-from.x,dy=to.y-from.y;
   const isP=from===player;
   const upg2t=isP?(playerUpgrade2?UPGRADES2.bow.find(u=>u.id===playerUpgrade2):null):(enemyUpgrade2?UPGRADES2.bow.find(u=>u.id===enemyUpgrade2):null);
-  const spd=upg2t&&upg2t.id==='fast_arrows'?512:320;
+  const spd=320;
   const homing=upg2t&&upg2t.id==='homing';
   const baseAng=Math.atan2(dy,dx);
   arrows.push({x:from.x+Math.cos(baseAng)*(from.r+10),y:from.y+Math.sin(baseAng)*(from.r+10),vx:Math.cos(baseAng)*spd,vy:Math.sin(baseAng)*spd,owner,life:5,homing});
