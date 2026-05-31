@@ -204,13 +204,65 @@ const PUSH_SCALE=280;
 const SWORD_ATTACK_DIST = SWORD_LEN + R + R + 10;
 
 let playerWeapon=null, enemyWeapon=null;
-let playerUpgrade=null, enemyUpgrade=null; // 'curved' | 'wide' | 'wide_bow' | 'dark_bow'
+let playerUpgrade=null, enemyUpgrade=null;
+let playerUpgrade2=null, enemyUpgrade2=null;
 let roundCount=0;
 let selectedUpgradeId=null;
 let gameRunning=false, animFrame=null, lastTime=0, gameEnded=false;
 let player, enemy, arrows, arrowTimers, lastHit;
 
 // ── upgrade definitions ──
+const UPGRADES2 = {
+  sword: [
+    {
+      id:'fast_dash',
+      name:'Swift Dash',
+      icon:'💨',
+      desc:'Dash cooldown is significantly reduced — more frequent lunges toward the enemy.',
+      stats:[{t:'Dash cooldown -50%',g:true}],
+    },
+    {
+      id:'crit',
+      name:'Critical Strike',
+      icon:'⚡',
+      desc:'25% chance each hit deals 2 damage instead of 1.',
+      stats:[{t:'25% crit (2 dmg)',g:true}],
+    }
+  ],
+  bow: [
+    {
+      id:'fast_arrows',
+      name:'Swift Arrows',
+      icon:'🏹',
+      desc:'Arrows fly significantly faster across the arena.',
+      stats:[{t:'Arrow speed +60%',g:true}],
+    },
+    {
+      id:'homing',
+      name:'Homing Arrows',
+      icon:'🎯',
+      desc:'Arrows slightly curve toward the enemy as they fly.',
+      stats:[{t:'Light homing',g:true}],
+    }
+  ],
+  shield: [
+    {
+      id:'extra_hp',
+      name:'Iron Will',
+      icon:'❤️',
+      desc:'Grants 5 additional max HP.',
+      stats:[{t:'+5 max HP',g:true}],
+    },
+    {
+      id:'fast_reflect',
+      name:'Power Reflect',
+      icon:'🔄',
+      desc:'Reflected projectiles travel much faster.',
+      stats:[{t:'Reflect speed ×2',g:true}],
+    }
+  ]
+};
+
 const UPGRADES = {
   sword: [
     {
@@ -298,8 +350,8 @@ function initBalls(){
   const spd=150;
   function rv(){ const a=Math.random()*Math.PI*2; return {vx:Math.cos(a)*spd,vy:Math.sin(a)*spd}; }
   const pv=rv(), ev=rv();
-  player={ x:130, y:H/2, vx:pv.vx, vy:pv.vy, r:R, weapon:playerWeapon, color:'#4cc9f0', alive:true, hp:getMaxHP(playerWeapon), aimAngle:0, sword:makeSword(), shield:{timer:0,blocking:false,blockTimer:0} };
-  enemy ={ x:W-130, y:H/2, vx:ev.vx, vy:ev.vy, r:R, weapon:enemyWeapon,  color:'#e63946', alive:true, hp:getMaxHP(enemyWeapon), aimAngle:Math.PI, sword:makeSword(), shield:{timer:0,blocking:false,blockTimer:0} };
+  player={ x:130, y:H/2, vx:pv.vx, vy:pv.vy, r:R, weapon:playerWeapon, color:'#4cc9f0', alive:true, hp:getMaxHP(playerWeapon)+(playerUpgrade2&&playerUpgrade2==='extra_hp'?5:0), aimAngle:0, sword:makeSword(), shield:{timer:0,blocking:false,blockTimer:0} };
+  enemy ={ x:W-130, y:H/2, vx:ev.vx, vy:ev.vy, r:R, weapon:enemyWeapon,  color:'#e63946', alive:true, hp:getMaxHP(enemyWeapon)+(enemyUpgrade2&&enemyUpgrade2==='extra_hp'?5:0), aimAngle:Math.PI, sword:makeSword(), shield:{timer:0,blocking:false,blockTimer:0} };
   arrows=[];
   arrowTimers={player:0,enemy:0,playerShot:0,enemyShot:0};
   lastHit={player:-999,enemy:-999};
@@ -384,6 +436,15 @@ function update(dt){
   for(let i=arrows.length-1;i>=0;i--){
     const a=arrows[i];
     a.x+=a.vx*dt; a.y+=a.vy*dt; a.life-=dt;
+    // homing: gently steer toward target
+    if(a.homing){
+      const htgt=a.owner==='player'?enemy:player;
+      const hdx=htgt.x-a.x, hdy=htgt.y-a.y;
+      const hd=Math.sqrt(hdx*hdx+hdy*hdy)||1;
+      a.vx+=(hdx/hd)*180*dt; a.vy+=(hdy/hd)*180*dt;
+      const spd2=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
+      if(spd2>360){ a.vx=a.vx/spd2*360; a.vy=a.vy/spd2*360; }
+    }
     if(a.x<0||a.x>W||a.y<0||a.y>H||a.life<=0){arrows.splice(i,1);continue;}
     const tgt=a.owner==='player'?enemy:player;
     if(!tgt.alive) continue;
@@ -406,11 +467,14 @@ function update(dt){
         if(Math.sqrt(sdx*sdx+sdy*sdy)<38) hit=true;
       }
       if(hit){
-        const spd2=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
+        const spd2r=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
         const shooter2=a.owner==='player'?player:enemy;
         const dx2=shooter2.x-tgt.x, dy2=shooter2.y-tgt.y;
         const d2=Math.sqrt(dx2*dx2+dy2*dy2)||1;
-        a.vx=(dx2/d2)*spd2; a.vy=(dy2/d2)*spd2;
+        const isPS=tgt===player;
+        const upg2r=isPS?(playerUpgrade2?UPGRADES2.shield.find(u=>u.id===playerUpgrade2):null):(enemyUpgrade2?UPGRADES2.shield.find(u=>u.id===enemyUpgrade2):null);
+        const reflSpd=upg2r&&upg2r.id==='fast_reflect'?spd2r*2:spd2r;
+        a.vx=(dx2/d2)*reflSpd; a.vy=(dy2/d2)*reflSpd;
         a.owner=a.owner==='player'?'enemy':'player';
         a.life=5;
         continue;
@@ -465,7 +529,8 @@ function updateSword(att, tgt, dt, isPlayer){
     sw.angle=lerpAngle(sw.angle,restAngle,Math.min(1,dt*8));
     sw.dashTimer=Math.max(0,sw.dashTimer-dt);
     if(sw.dashTimer<=0){
-      sw.dashTimer=2.0;
+      const upg2=isPlayer?(playerUpgrade2?UPGRADES2.sword.find(u=>u.id===playerUpgrade2):null):(enemyUpgrade2?UPGRADES2.sword.find(u=>u.id===enemyUpgrade2):null);
+      sw.dashTimer=upg2&&upg2.id==='fast_dash'?1.0:2.0;
       const nx=(tgt.x-att.x), ny=(tgt.y-att.y);
       const nd=Math.sqrt(nx*nx+ny*ny)||1;
       att.vx+=(nx/nd)*160*dashMult;
@@ -516,7 +581,10 @@ function checkSwordBlade(att,tgt,angle,sw,isPlayer,swordLen){
   const len = swordLen || SWORD_LEN;
   const s0=att.r, s1=att.r+len;
   const upg = isPlayer ? (playerUpgrade?UPGRADES.sword.find(u=>u.id===playerUpgrade):null) : (enemyUpgrade?UPGRADES.sword.find(u=>u.id===enemyUpgrade):null);
-  const dmg = upg ? upg.damageMult : 1;
+  const upg2c=isPlayer?(playerUpgrade2?UPGRADES2.sword.find(u=>u.id===playerUpgrade2):null):(enemyUpgrade2?UPGRADES2.sword.find(u=>u.id===enemyUpgrade2):null);
+  const baseDmg = upg ? upg.damageMult : 1;
+  const crit = upg2c&&upg2c.id==='crit'&&Math.random()<0.25;
+  const dmg = crit ? baseDmg+1 : baseDmg;
   // if target is blocking with shield, negate damage and push attacker back
   if(tgt.shield && tgt.shield.blocking){
     const isPlayerShield=tgt===player;
@@ -568,20 +636,24 @@ function damage(b, amt=1){
 function shootArrow(from,to,owner){
   const dx=to.x-from.x,dy=to.y-from.y;
   const d=Math.sqrt(dx*dx+dy*dy)||1;
-  const spd=320;
-  arrows.push({x:from.x+(dx/d)*(from.r+10),y:from.y+(dy/d)*(from.r+10),vx:(dx/d)*spd,vy:(dy/d)*spd,owner,life:5});
+  const isP=from===player;
+  const upg2a=isP?(playerUpgrade2?UPGRADES2.bow.find(u=>u.id===playerUpgrade2):null):(enemyUpgrade2?UPGRADES2.bow.find(u=>u.id===enemyUpgrade2):null);
+  const spd=upg2a&&upg2a.id==='fast_arrows'?512:320;
+  const homing=upg2a&&upg2a.id==='homing';
+  arrows.push({x:from.x+(dx/d)*(from.r+10),y:from.y+(dy/d)*(from.r+10),vx:(dx/d)*spd,vy:(dy/d)*spd,owner,life:5,homing});
 }
 
 function shootTriple(from,to,owner,spreadAngles){
   const dx=to.x-from.x,dy=to.y-from.y;
-  const spd=320;
+  const isP=from===player;
+  const upg2t=isP?(playerUpgrade2?UPGRADES2.bow.find(u=>u.id===playerUpgrade2):null):(enemyUpgrade2?UPGRADES2.bow.find(u=>u.id===enemyUpgrade2):null);
+  const spd=upg2t&&upg2t.id==='fast_arrows'?512:320;
+  const homing=upg2t&&upg2t.id==='homing';
   const baseAng=Math.atan2(dy,dx);
-  // always shoot center arrow
-  arrows.push({x:from.x+Math.cos(baseAng)*(from.r+10),y:from.y+Math.sin(baseAng)*(from.r+10),vx:Math.cos(baseAng)*spd,vy:Math.sin(baseAng)*spd,owner,life:5});
-  // side arrows from spread
+  arrows.push({x:from.x+Math.cos(baseAng)*(from.r+10),y:from.y+Math.sin(baseAng)*(from.r+10),vx:Math.cos(baseAng)*spd,vy:Math.sin(baseAng)*spd,owner,life:5,homing});
   (spreadAngles||[-0.28,0.28]).forEach(offset=>{
     const ang=baseAng+offset;
-    arrows.push({x:from.x+Math.cos(ang)*(from.r+10),y:from.y+Math.sin(ang)*(from.r+10),vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,owner,life:5});
+    arrows.push({x:from.x+Math.cos(ang)*(from.r+10),y:from.y+Math.sin(ang)*(from.r+10),vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,owner,life:5,homing});
   });
 }
 
@@ -834,10 +906,13 @@ function endGame(result){
   setTimeout(()=>{
     roundCount++;
     if(roundCount===1){
-      // pick random enemy upgrade
       const eUpgrades=UPGRADES[enemyWeapon]||[];
       enemyUpgrade=eUpgrades.length>0?eUpgrades[Math.floor(Math.random()*eUpgrades.length)].id:null;
-      showUpgradeScreen(result);
+      showUpgradeScreen(result,1);
+    } else if(roundCount===2){
+      const eUpgrades2=UPGRADES2[enemyWeapon]||[];
+      enemyUpgrade2=eUpgrades2.length>0?eUpgrades2[Math.floor(Math.random()*eUpgrades2.length)].id:null;
+      showUpgradeScreen(result,2);
     } else {
       showResult(result);
     }
@@ -863,17 +938,21 @@ function showResult(result){
 }
 
 // ── UPGRADE SCREEN ──
-function showUpgradeScreen(pendingResult){
-  const upgrades = UPGRADES[playerWeapon] || [];
+let _pendingRound=1;
+function showUpgradeScreen(pendingResult,round){
+  _pendingRound=round||1;
+  const upgPool = round===2 ? UPGRADES2 : UPGRADES;
+  const upgrades = upgPool[playerWeapon] || [];
   if(upgrades.length===0){
     showResult(pendingResult);
     return;
   }
   selectedUpgradeId=null;
+  const roundLabel = round===2 ? 'Round 2 Upgrade' : 'Upgrade Your Weapon';
   const subText = pendingResult==='win'?'You won — upgrade and fight again':pendingResult==='lose'?'You lost — pick your upgrade':'Choose your path';
 
   const cardsHtml = upgrades.map(upg=>{
-    const stats=upg.stats.map(s=>`<span class="stat-pill ${s.g?'stat-good':'stat-bad'}">${s.t}</span>`).join('');
+    const stats=(upg.stats||[]).map(s=>`<span class="stat-pill ${s.g?'stat-good':'stat-bad'}">${s.t}</span>`).join('');
     return `<div class="upgrade-card" id="upg-${upg.id}" onclick="selectUpgrade('${upg.id}')">
       <div class="upgrade-badge">✓</div>
       <span class="upgrade-icon">${upg.icon}</span>
@@ -886,7 +965,7 @@ function showUpgradeScreen(pendingResult){
   document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
   const screen = document.getElementById('upgrade-screen');
   screen.innerHTML = `
-    <div class="upgrade-title">Upgrade Your Weapon</div>
+    <div class="upgrade-title">${roundLabel}</div>
     <div class="upgrade-sub">${subText}</div>
     <div class="upgrade-grid">${cardsHtml}</div>
     <button class="btn-upgrade visible" id="btn-upgrade-hidden" style="opacity:0;pointer-events:none" onclick="applyUpgrade()">Upgrade &amp; Fight</button>
@@ -905,7 +984,8 @@ function selectUpgrade(id){
 
 function applyUpgrade(){
   if(!selectedUpgradeId) return;
-  playerUpgrade=selectedUpgradeId;
+  if(_pendingRound===2) playerUpgrade2=selectedUpgradeId;
+  else playerUpgrade=selectedUpgradeId;
   rematch();
 }
 
@@ -918,7 +998,7 @@ function rematch(){
 
 function goMenu(){
   showScreen('menu-screen');
-  playerWeapon=null; playerUpgrade=null; enemyUpgrade=null; roundCount=0;
+  playerWeapon=null; playerUpgrade=null; enemyUpgrade=null; playerUpgrade2=null; enemyUpgrade2=null; roundCount=0;
   document.querySelectorAll('.weapon-card').forEach(c=>c.classList.remove('selected'));
   document.getElementById('btn-fight').classList.remove('visible');
 }
