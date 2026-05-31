@@ -57,7 +57,6 @@
 
   /* ARENA */
   #arena-screen { flex-direction:column; gap:0; align-items:center; }
-  #arena-canvas { display:block; }
   .hp-row { width:900px; display:flex; justify-content:space-between; align-items:center; padding:8px 4px 6px; }
   .hp-block { display:flex; flex-direction:column; gap:4px; }
   .hp-block.right { align-items:flex-end; }
@@ -68,46 +67,41 @@
   #hp-bar-enemy  { background:var(--red); }
 
   /* UPGRADE SCREEN */
-  #upgrade-screen { flex-direction:column; gap:24px; align-items:center; }
-  .upgrade-title { font-size:28px; font-weight:700; letter-spacing:3px; color:var(--gold); text-transform:uppercase; text-align:center; }
+  #upgrade-screen { flex-direction:column; gap:20px; align-items:center; }
+  .upgrade-title { font-size:26px; font-weight:700; letter-spacing:3px; color:var(--gold); text-transform:uppercase; text-align:center; }
   .upgrade-sub { font-size:12px; color:var(--dim); letter-spacing:2px; text-transform:uppercase; }
-  .upgrade-grid { display:flex; gap:24px; justify-content:center; }
+  .upgrade-grid { display:flex; gap:20px; justify-content:center; flex-wrap:wrap; max-width:760px; }
   .upgrade-card {
-    width:200px; background:var(--panel); border:2px solid var(--border);
-    border-radius:12px; padding:24px 16px 20px; cursor:pointer;
+    width:190px; background:var(--panel); border:2px solid var(--border);
+    border-radius:12px; padding:22px 14px 18px; cursor:pointer;
     text-align:center; transition:border-color .15s,background .15s,transform .15s;
     position:relative; user-select:none;
   }
   .upgrade-card:hover { border-color:#555570; transform:translateY(-2px); }
   .upgrade-card.selected { border-color:var(--gold); background:#1b1708; }
-  .upgrade-icon { font-size:48px; display:block; margin-bottom:12px; }
-  .upgrade-name { font-size:14px; font-weight:600; color:var(--text); margin-bottom:6px; letter-spacing:1px; }
+  .upgrade-icon { font-size:44px; display:block; margin-bottom:10px; }
+  .upgrade-name { font-size:13px; font-weight:600; color:var(--text); margin-bottom:5px; letter-spacing:1px; }
   .upgrade-card.selected .upgrade-name { color:var(--gold); }
   .upgrade-desc { font-size:11px; color:var(--dim); line-height:1.5; }
   .upgrade-badge {
-    position:absolute; top:8px; right:8px; width:20px; height:20px;
+    position:absolute; top:8px; right:8px; width:18px; height:18px;
     background:var(--gold); border-radius:50%;
     display:flex; align-items:center; justify-content:center;
-    font-size:11px; color:#000; font-weight:700; opacity:0; transition:opacity .15s;
+    font-size:10px; color:#000; font-weight:700; opacity:0; transition:opacity .15s;
   }
   .upgrade-card.selected .upgrade-badge { opacity:1; }
+  .upgrade-stats { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin-top:7px; }
+  .stat-pill { font-size:10px; padding:2px 7px; border-radius:20px; letter-spacing:.5px; font-weight:600; }
+  .stat-good { background:rgba(76,201,240,.15); color:#4cc9f0; border:1px solid rgba(76,201,240,.3); }
+  .stat-bad  { background:rgba(230,57,70,.15);  color:#e63946; border:1px solid rgba(230,57,70,.3); }
   .btn-upgrade {
     font-size:14px; letter-spacing:3px; padding:12px 52px;
     background:var(--gold); border:none; border-radius:7px;
     color:#1a0f00; cursor:pointer; font-weight:600;
     transition:opacity .2s,transform .15s; opacity:0; pointer-events:none; text-transform:uppercase;
   }
-  .btn-upgrade.visible { opacity:1; pointer-events:all; }
+  .btn-upgrade.active { opacity:1; pointer-events:all; }
   .btn-upgrade:hover { transform:scale(1.04); }
-
-  /* stat pills */
-  .upgrade-stats { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; margin-top:8px; }
-  .stat-pill {
-    font-size:10px; padding:2px 8px; border-radius:20px;
-    letter-spacing:.5px; font-weight:600;
-  }
-  .stat-good { background:rgba(76,201,240,.15); color:#4cc9f0; border:1px solid rgba(76,201,240,.3); }
-  .stat-bad  { background:rgba(230,57,70,.15);  color:#e63946; border:1px solid rgba(230,57,70,.3); }
 
   /* RESULT */
   #result-screen { flex-direction:column; gap:20px; align-items:center; }
@@ -175,10 +169,10 @@
 
 <!-- UPGRADE -->
 <div class="screen hidden" id="upgrade-screen">
-  <div class="upgrade-title">Upgrade Your Weapon</div>
-  <div class="upgrade-sub">Choose your path</div>
+  <div class="upgrade-title" id="upg-title">Upgrade Your Weapon</div>
+  <div class="upgrade-sub" id="upg-sub">Choose your path</div>
   <div class="upgrade-grid" id="upgrade-grid"></div>
-  <button class="btn-upgrade" id="btn-upgrade" onclick="applyUpgrade()">Upgrade & Fight</button>
+  <button class="btn-upgrade" id="btn-upgrade" onclick="applyUpgrade()">Upgrade &amp; Fight</button>
 </div>
 
 <!-- RESULT -->
@@ -191,132 +185,100 @@
 
 <script>
 const W=900, H=600, R=22;
-const MAX_HP_SWORD=10;
-const MAX_HP_BOW=8;
-const MAX_HP_SHIELD=16;
-const SHIELD_CYCLE=4.0;   // seconds between blocks
-const SHIELD_DURATION=4.0; // seconds block lasts
-const SWORD_LEN=68;
-const SWORD_W=5;
+const MAX_HP = {sword:10, bow:8, shield:16};
+const SHIELD_CYCLE=4.0, SHIELD_DURATION=4.0;
+const SWORD_LEN=68, SWORD_W=5;
 const ARROW_INTERVAL=1.8;
-const WALL_BOUNCE=0.95;
-const PUSH_SCALE=280;
+const WALL_BOUNCE=0.95, PUSH_SCALE=280;
 const SWORD_ATTACK_DIST = SWORD_LEN + R + R + 10;
 
-let playerWeapon=null, enemyWeapon=null;
-let playerUpgrade=null, enemyUpgrade=null;
-let playerUpgrade2=null, enemyUpgrade2=null;
-let roundCount=0;
-let selectedUpgradeId=null;
-let gameRunning=false, animFrame=null, lastTime=0, gameEnded=false;
-let player, enemy, arrows, arrowTimers, lastHit;
-
-// ── upgrade definitions ──
-const UPGRADES2 = {
+// ── UPGRADE DATA ──
+// Round 1: weapon-specific path choice
+const UPGRADES_R1 = {
   sword: [
-    {
-      id:'fast_dash',
-      name:'Swift Dash',
-      icon:'💨',
-      desc:'Dash cooldown is significantly reduced — more frequent lunges toward the enemy.',
-      stats:[{t:'Dash cooldown -50%',g:true}],
-    },
-    {
-      id:'crit',
-      name:'Critical Strike',
-      icon:'⚡',
-      desc:'25% chance each hit deals 2 damage instead of 1.',
-      stats:[{t:'25% crit (2 dmg)',g:true}],
-    }
-  ],
-  bow: [
-    {
-      id:'fast_fire',
-      name:'Swift Arrows',
-      icon:'🏹',
-      desc:'Draw speed increased — fires 50% faster.',
-      stats:[{t:'Fire rate +50%',g:true}],
-    },
-    {
-      id:'homing',
-      name:'Homing Arrows',
-      icon:'🎯',
-      desc:'Arrows slightly curve toward the enemy as they fly.',
-      stats:[{t:'Light homing',g:true}],
-    }
-  ],
-  shield: [
-    {
-      id:'extra_hp',
-      name:'Iron Will',
-      icon:'❤️',
-      desc:'Grants 5 additional max HP.',
-      stats:[{t:'+5 max HP',g:true}],
-    },
-    {
-      id:'fast_reflect',
-      name:'Power Reflect',
-      icon:'🔄',
-      desc:'Reflected projectiles travel much faster.',
-      stats:[{t:'Reflect speed ×2',g:true}],
-    }
-  ]
-};
-
-const UPGRADES = {
-  sword: [
-    {
-      id:'curved',
-      name:'Curved Blade',
-      icon:'🗡️',
-      desc:'A crescent blade — dashes are much more powerful, allowing aggressive lunges across the arena.',
-      stats:[{t:'Dash +80%',g:true},{t:'Damage normal',g:true}],
-      dashMult:1.8, damageMult:1, swordLen:68
-    },
-    {
-      id:'wide',
-      name:'Broad Sword',
-      icon:'⚔️',
-      desc:'A heavy, wide blade — each hit deals double damage, but the added weight slightly slows your dashes.',
+    { id:'curved', name:'Curved Blade', icon:'🗡️',
+      desc:'Crescent blade — dashes are much more powerful.',
+      stats:[{t:'Dash +80%',g:true}],
+      dashMult:1.8, damageMult:1, swordLen:68 },
+    { id:'wide', name:'Broad Sword', icon:'⚔️',
+      desc:'Heavy wide blade — hits deal double damage, dash slightly weaker.',
       stats:[{t:'Damage ×2',g:true},{t:'Dash -25%',g:false}],
-      dashMult:0.75, damageMult:2, swordLen:80
-    }
+      dashMult:0.75, damageMult:2, swordLen:80 },
   ],
   bow: [
-    {
-      id:'wide_bow',
-      name:'Wide Bow',
-      icon:'🏹',
-      desc:'A broader limb gives explosive draw speed — fires twice as fast, no spread shot.',
+    { id:'wide_bow', name:'Wide Bow', icon:'🏹',
+      desc:'Broader limb — fires twice as fast, no spread shot.',
       stats:[{t:'Fire rate ×2',g:true},{t:'No triple shot',g:false}],
-      fireRateMult:2, tripleShot:false, spreadAngles:[]
-    },
-    {
-      id:'dark_bow',
-      name:'Dark Bow',
-      icon:'🪃',
-      desc:'An ancient dark bow — fires 4 side arrows in a tight fan around the main shot.',
-      stats:[{t:'5 arrows per salvo',g:true},{t:'Fire rate normal',g:true}],
-      fireRateMult:1, tripleShot:true, spreadAngles:[-0.42,-0.21,0.21,0.42]
-    }
+      fireRateMult:2, tripleShot:false, spreadAngles:[] },
+    { id:'dark_bow', name:'Dark Bow', icon:'🪃',
+      desc:'Ancient dark bow — fires 4 extra side arrows in a fan.',
+      stats:[{t:'5 arrows per salvo',g:true}],
+      fireRateMult:1, tripleShot:true, spreadAngles:[-0.42,-0.21,0.21,0.42] },
+    { id:'nature_bow', name:'Nature Bow', icon:'🌿',
+      desc:'Vine-wrapped bow — 25% chance each arrow deals +1 critical damage.',
+      stats:[{t:'25% crit (+2 dmg)',g:true}],
+      fireRateMult:1, tripleShot:true, spreadAngles:[], critChance:0.25 },
   ],
   shield: [
-    {
-      id:'dark_shield',
-      name:'Dark Shield',
-      icon:'🌑',
-      desc:'A dark barrier surrounds the ball — creates a force field slightly further out that blocks all attacks and projectiles.',
-      stats:[{t:'360° block field',g:true},{t:'Longer cooldown',g:false}],
-    },
-    {
-      id:'spike_shield',
-      name:'Spike Shield',
-      icon:'⚙️',
-      desc:'Spikes on the shield deal 1 damage on contact, and reflected sword hits deal +1 extra damage.',
-      stats:[{t:'Contact damage',g:true},{t:'Reflect +1 dmg',g:true}],
-    }
-  ]
+    { id:'dark_shield', name:'Dark Shield', icon:'🌑',
+      desc:'Force field surrounds the ball — blocks all attacks in a wider radius.',
+      stats:[{t:'360° block field',g:true},{t:'Longer cooldown',g:false}] },
+    { id:'spike_shield', name:'Spike Shield', icon:'⚙️',
+      desc:'Spikes deal contact damage; reflected sword hits deal +1 extra damage.',
+      stats:[{t:'Contact damage',g:true},{t:'Reflect +1 dmg',g:true}] },
+  ],
 };
+
+// Round 2: secondary upgrades per weapon
+const UPGRADES_R2 = {
+  sword: [
+    { id:'fast_dash', name:'Swift Dash', icon:'💨',
+      desc:'Dash cooldown reduced — more frequent lunges.',
+      stats:[{t:'Dash cooldown -50%',g:true}] },
+    { id:'crit_sword', name:'Critical Strike', icon:'⚡',
+      desc:'25% chance each hit deals +2 extra damage.',
+      stats:[{t:'25% crit (+2 dmg)',g:true}] },
+  ],
+  bow: [
+    { id:'fast_fire', name:'Swift Arrows', icon:'💨',
+      desc:'Draw speed +50% — fires faster.',
+      stats:[{t:'Fire rate +50%',g:true}] },
+    { id:'homing', name:'Homing Arrows', icon:'🎯',
+      desc:'Arrows gently curve toward the enemy.',
+      stats:[{t:'Light homing',g:true}] },
+  ],
+  shield: [
+    { id:'extra_hp', name:'Iron Will', icon:'❤️',
+      desc:'Grants 5 additional max HP.',
+      stats:[{t:'+5 max HP',g:true}] },
+    { id:'fast_reflect', name:'Power Reflect', icon:'🔄',
+      desc:'Reflected projectiles travel much faster.',
+      stats:[{t:'Reflect speed ×2',g:true}] },
+  ],
+};
+
+// Round 3: universal passives (all weapons share the same 3)
+const UPGRADES_R3 = [
+  { id:'r3_crit', name:'15% Critical', icon:'🎲',
+    desc:'All attacks have a 15% chance to deal +2 extra damage.',
+    stats:[{t:'15% crit (+2 dmg)',g:true}] },
+  { id:'r3_hp', name:'+5 Max HP', icon:'💚',
+    desc:'Permanently gain 5 additional max HP.',
+    stats:[{t:'+5 max HP',g:true}] },
+  { id:'r3_dmg', name:'+1 Damage', icon:'🔥',
+    desc:'Every attack deals +1 extra damage permanently.',
+    stats:[{t:'+1 dmg always',g:true}] },
+];
+
+// player state
+let playerWeapon=null, enemyWeapon=null;
+let playerUpgrade=null, enemyUpgrade=null;     // R1
+let playerUpgrade2=null, enemyUpgrade2=null;   // R2
+let playerUpgrade3=null, enemyUpgrade3=null;   // R3
+let roundCount=0;
+let selectedUpgradeId=null, currentUpgradeRound=1;
+let gameRunning=false, animFrame=null, lastTime=0, gameEnded=false;
+let player, enemy, arrows, arrowTimers, lastHit, particles;
 
 function selectWeapon(w){
   playerWeapon=w;
@@ -330,44 +292,59 @@ function showScreen(id){
 }
 
 function makeSword(){
-  return {
-    state:'rest', angle:0, restAngle:0, slashAngle:0,
-    timer:0, hitDealt:false,
-    slashDur:0.13, recoverDur:0.25, cooldown:0,
-    dashTimer:1.0+Math.random(),
-  };
+  return { state:'rest', angle:0, restAngle:0, slashAngle:0, timer:0, hitDealt:false,
+           slashDur:0.13, recoverDur:0.25, cooldown:0, dashTimer:1.0+Math.random() };
 }
 
-function getMaxHP(weapon){ return weapon==='bow'?MAX_HP_BOW:weapon==='shield'?MAX_HP_SHIELD:MAX_HP_SWORD; }
+function getBaseHP(weapon){ return MAX_HP[weapon]||8; }
+function getPlayerMaxHP(){
+  let hp=getBaseHP(playerWeapon);
+  if(playerUpgrade2==='extra_hp') hp+=5;
+  if(playerUpgrade3==='r3_hp') hp+=5;
+  return hp;
+}
+function getEnemyMaxHP(){
+  let hp=getBaseHP(enemyWeapon);
+  if(enemyUpgrade2==='extra_hp') hp+=5;
+  if(enemyUpgrade3==='r3_hp') hp+=5;
+  return hp;
+}
 
 function initBalls(){
   gameEnded=false;
   if(roundCount===0){
-    if(playerWeapon==='sword') enemyWeapon=['bow','shield'][Math.floor(Math.random()*2)];
-    else if(playerWeapon==='bow') enemyWeapon=['sword','shield'][Math.floor(Math.random()*2)];
-    else { enemyWeapon=['sword','bow'][Math.floor(Math.random()*2)]; }
+    const opts={sword:['bow','shield'],bow:['sword','shield'],shield:['sword','bow']};
+    const pool=opts[playerWeapon]||['bow'];
+    enemyWeapon=pool[Math.floor(Math.random()*pool.length)];
   }
   const spd=150;
   function rv(){ const a=Math.random()*Math.PI*2; return {vx:Math.cos(a)*spd,vy:Math.sin(a)*spd}; }
-  const pv=rv(), ev=rv();
-  player={ x:130, y:H/2, vx:pv.vx, vy:pv.vy, r:R, weapon:playerWeapon, color:'#4cc9f0', alive:true, hp:getMaxHP(playerWeapon)+(playerUpgrade2&&playerUpgrade2==='extra_hp'?5:0), aimAngle:0, sword:makeSword(), shield:{timer:0,blocking:false,blockTimer:0} };
-  enemy ={ x:W-130, y:H/2, vx:ev.vx, vy:ev.vy, r:R, weapon:enemyWeapon,  color:'#e63946', alive:true, hp:getMaxHP(enemyWeapon)+(enemyUpgrade2&&enemyUpgrade2==='extra_hp'?5:0), aimAngle:Math.PI, sword:makeSword(), shield:{timer:0,blocking:false,blockTimer:0} };
+  const pv=rv(),ev=rv();
+  player={ x:130,y:H/2,vx:pv.vx,vy:pv.vy,r:R,weapon:playerWeapon,color:'#4cc9f0',
+           alive:true,hp:getPlayerMaxHP(),aimAngle:0,sword:makeSword(),
+           shield:{timer:0,blocking:false,blockTimer:0} };
+  enemy ={ x:W-130,y:H/2,vx:ev.vx,vy:ev.vy,r:R,weapon:enemyWeapon,color:'#e63946',
+           alive:true,hp:getEnemyMaxHP(),aimAngle:Math.PI,sword:makeSword(),
+           shield:{timer:0,blocking:false,blockTimer:0} };
   arrows=[];
+  particles=[];
   arrowTimers={player:0,enemy:0,playerShot:0,enemyShot:0};
   lastHit={player:-999,enemy:-999};
   updateHPBars();
 }
 
 function updateHPBars(){
-  document.getElementById('hp-bar-player').style.width=(player.hp/getMaxHP(playerWeapon)*100)+'%';
-  document.getElementById('hp-bar-enemy').style.width=(enemy.hp/getMaxHP(enemyWeapon)*100)+'%';
+  document.getElementById('hp-bar-player').style.width=(player.hp/getPlayerMaxHP()*100)+'%';
+  document.getElementById('hp-bar-enemy').style.width=(enemy.hp/getEnemyMaxHP()*100)+'%';
 }
 
 function startGame(){
+  roundCount=0;
+  playerUpgrade=enemyUpgrade=playerUpgrade2=enemyUpgrade2=playerUpgrade3=enemyUpgrade3=null;
   showScreen('arena-screen');
   initBalls();
   gameRunning=true; lastTime=performance.now();
-  animFrame=setInterval(loop, 1000/60);
+  animFrame=setInterval(loop,1000/60);
 }
 
 function loop(){
@@ -376,119 +353,199 @@ function loop(){
   const dt=Math.min((now-lastTime)/1000,.05);
   lastTime=now;
   update(dt);
+  updateParticles(dt);
   draw();
 }
 
 function angleDiff(a,b){ let d=((b-a+Math.PI*3)%(Math.PI*2))-Math.PI; return d; }
 function lerpAngle(a,b,t){ return a+angleDiff(a,b)*t; }
+function easeOut(t){ return 1-(1-t)*(1-t); }
+
+// ── get upgrade objects by id ──
+function getR1(weapon,id){ return (UPGRADES_R1[weapon]||[]).find(u=>u.id===id)||null; }
+function getR2(weapon,id){ return (UPGRADES_R2[weapon]||[]).find(u=>u.id===id)||null; }
+function getR3(id){ return UPGRADES_R3.find(u=>u.id===id)||null; }
 
 function update(dt){
-  moveBall(player,dt);
-  moveBall(enemy,dt);
+  moveBall(player,dt); moveBall(enemy,dt);
   ballCollide(player,enemy);
 
   if(player.weapon==='sword') updateSword(player,enemy,dt,true);
   if(enemy.weapon==='sword')  updateSword(enemy,player,dt,false);
-
-  // shield logic
-  if(player.weapon==='shield') updateShield(player,dt);
-  if(enemy.weapon==='shield')  updateShield(enemy,dt);
+  if(player.weapon==='shield') updateShield(player,dt,true);
+  if(enemy.weapon==='shield')  updateShield(enemy,dt,false);
 
   if(player.weapon==='bow') player.aimAngle=Math.atan2(enemy.y-player.y,enemy.x-player.x);
   if(enemy.weapon==='bow')  enemy.aimAngle =Math.atan2(player.y-enemy.y,player.x-enemy.x);
 
-  // bow shooting — player
-  if(player.weapon==='bow'){
-    const upg = playerUpgrade ? UPGRADES.bow.find(u=>u.id===playerUpgrade) : null;
-    const upg2bow = playerUpgrade2 ? UPGRADES2.bow.find(u=>u.id===playerUpgrade2) : null;
-    const interval = (upg ? ARROW_INTERVAL/(upg.fireRateMult||1) : ARROW_INTERVAL) / (upg2bow&&upg2bow.id==='fast_fire'?1.5:1);
-    arrowTimers.player+=dt;
-    if(arrowTimers.player>=interval){
-      arrowTimers.player=0;
-      arrowTimers.playerShot=(arrowTimers.playerShot||0)+1;
-      const doTriple = upg ? upg.tripleShot : true;
-      if(doTriple && arrowTimers.playerShot>=3){
-        arrowTimers.playerShot=0;
-        shootTriple(player,enemy,'player', upg ? upg.spreadAngles : [-0.28,0.28]);
-      } else {
-        shootArrow(player,enemy,'player');
-      }
-    }
-  }
-
-  // bow shooting — enemy
-  if(enemy.weapon==='bow'){
-    const eupg=enemyUpgrade?UPGRADES.bow.find(u=>u.id===enemyUpgrade):null;
-    const eupg2=enemyUpgrade2?UPGRADES2.bow.find(u=>u.id===enemyUpgrade2):null;
-    const einterval=(eupg?ARROW_INTERVAL/(eupg.fireRateMult||1):ARROW_INTERVAL)/(eupg2&&eupg2.id==='fast_fire'?1.5:1);
-    arrowTimers.enemy+=dt;
-    if(arrowTimers.enemy>=einterval){
-      arrowTimers.enemy=0;
-      arrowTimers.enemyShot=(arrowTimers.enemyShot||0)+1;
-      const edoTriple=eupg?eupg.tripleShot:true;
-      if(edoTriple&&arrowTimers.enemyShot>=3){
-        arrowTimers.enemyShot=0;
-        shootTriple(enemy,player,'enemy',eupg?eupg.spreadAngles:[-0.28,0.28]);
-      } else {
-        shootArrow(enemy,player,'enemy');
-      }
-    }
-  }
+  updateBowShoot(player,enemy,'player',dt);
+  updateBowShoot(enemy,player,'enemy',dt);
 
   for(let i=arrows.length-1;i>=0;i--){
     const a=arrows[i];
     a.x+=a.vx*dt; a.y+=a.vy*dt; a.life-=dt;
-    // homing: gently steer toward target
-    if(a.homing && a.life>4.2){
+    if(a.homing){
       const htgt=a.owner==='player'?enemy:player;
-      const hdx=htgt.x-a.x, hdy=htgt.y-a.y;
+      const hdx=htgt.x-a.x,hdy=htgt.y-a.y;
       const hd=Math.sqrt(hdx*hdx+hdy*hdy)||1;
       a.vx+=(hdx/hd)*600*dt; a.vy+=(hdy/hd)*600*dt;
-      const spd2=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
-      if(spd2>400){ a.vx=a.vx/spd2*400; a.vy=a.vy/spd2*400; }
+      const sp2=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
+      if(sp2>400){ a.vx=a.vx/sp2*400; a.vy=a.vy/sp2*400; }
     }
-    if(a.x<0||a.x>W||a.y<0||a.y>H||a.life<=0){arrows.splice(i,1);continue;}
+    if(a.x<0||a.x>W||a.y<0||a.y>H||a.life<=0){ arrows.splice(i,1); continue; }
     const tgt=a.owner==='player'?enemy:player;
     if(!tgt.alive) continue;
-    const dx=a.x-tgt.x,dy=a.y-tgt.y;
-    // shield collision — check against shield ) position first
-    if(tgt.weapon==='shield' && tgt.shield && tgt.shield.blocking){
-      const isPlayerShield=tgt===player;
-      const upgS=(isPlayerShield&&playerUpgrade)?UPGRADES.shield.find(u=>u.id===playerUpgrade):null;
+
+    // shield reflection check
+    if(tgt.weapon==='shield' && tgt.shield.blocking){
+      const isPS=tgt===player;
+      const upgS=getR1(tgt.weapon, isPS?playerUpgrade:enemyUpgrade);
       const isDark=upgS&&upgS.id==='dark_shield';
-      let hit=false;
+      let shieldHit=false;
       if(isDark){
-        // full field around ball
-        const fdx=a.x-tgt.x, fdy=a.y-tgt.y;
-        if(Math.sqrt(fdx*fdx+fdy*fdy)<tgt.r+32) hit=true;
+        const fdx=a.x-tgt.x,fdy=a.y-tgt.y;
+        if(Math.sqrt(fdx*fdx+fdy*fdy)<tgt.r+32) shieldHit=true;
       } else {
-        const toEnemyA=tgt===player?Math.atan2(enemy.y-tgt.y,enemy.x-tgt.x):Math.atan2(player.y-tgt.y,player.x-tgt.x);
-        const sx=tgt.x+Math.cos(toEnemyA)*(tgt.r+10);
-        const sy=tgt.y+Math.sin(toEnemyA)*(tgt.r+10);
-        const sdx=a.x-sx, sdy=a.y-sy;
-        if(Math.sqrt(sdx*sdx+sdy*sdy)<38) hit=true;
+        const foeAngle=tgt===player?Math.atan2(enemy.y-tgt.y,enemy.x-tgt.x):Math.atan2(player.y-tgt.y,player.x-tgt.x);
+        const sx=tgt.x+Math.cos(foeAngle)*(tgt.r+10),sy=tgt.y+Math.sin(foeAngle)*(tgt.r+10);
+        if(Math.sqrt((a.x-sx)**2+(a.y-sy)**2)<38) shieldHit=true;
       }
-      if(hit){
+      if(shieldHit){
         const spd2r=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
         const shooter2=a.owner==='player'?player:enemy;
-        const dx2=shooter2.x-tgt.x, dy2=shooter2.y-tgt.y;
+        const dx2=shooter2.x-tgt.x,dy2=shooter2.y-tgt.y;
         const d2=Math.sqrt(dx2*dx2+dy2*dy2)||1;
-        const isPS=tgt===player;
-        const upg2r=isPS?(playerUpgrade2?UPGRADES2.shield.find(u=>u.id===playerUpgrade2):null):(enemyUpgrade2?UPGRADES2.shield.find(u=>u.id===enemyUpgrade2):null);
+        const upg2r=getR2(tgt.weapon, isPS?playerUpgrade2:enemyUpgrade2);
         const reflSpd=upg2r&&upg2r.id==='fast_reflect'?spd2r*2:spd2r;
         a.vx=(dx2/d2)*reflSpd; a.vy=(dy2/d2)*reflSpd;
         a.owner=a.owner==='player'?'enemy':'player';
-        a.life=5;
-        continue;
+        a.life=5; continue;
       }
     }
+
+    const dx=a.x-tgt.x,dy=a.y-tgt.y;
     if(Math.sqrt(dx*dx+dy*dy)<tgt.r+4){
       const sp=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
       tgt.vx=(a.vx/sp)*PUSH_SCALE*0.5; tgt.vy=(a.vy/sp)*PUSH_SCALE*0.5;
+      const isP=a.owner==='player';
+      let dmg=1;
+      let isCrit=false;
+      // nature bow crit
+      const r1bow=getR1('bow',isP?playerUpgrade:enemyUpgrade);
+      if(r1bow&&r1bow.critChance&&Math.random()<r1bow.critChance){ dmg+=2; isCrit=true; }
+      // R3 crit
+      const r3=getR3(isP?playerUpgrade3:enemyUpgrade3);
+      if(r3&&r3.id==='r3_crit'&&Math.random()<0.15){ dmg+=2; isCrit=true; }
+      if(r3&&r3.id==='r3_dmg') dmg+=1;
       arrows.splice(i,1);
-      damage(tgt, 1);
+      if(isCrit) spawnCritEffect(tgt.x, tgt.y, isP?'#a0ff60':'#ffcc00');
+      damage(tgt,dmg);
     }
   }
+}
+
+function spawnCritEffect(x, y, color){
+  const count=10;
+  for(let i=0;i<count;i++){
+    const ang=Math.random()*Math.PI*2;
+    const spd=60+Math.random()*120;
+    particles.push({
+      x, y,
+      vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd,
+      life: 0.45, maxLife: 0.45,
+      r: 2+Math.random()*3,
+      color
+    });
+  }
+  // star lines
+  for(let i=0;i<6;i++){
+    const ang=(i/6)*Math.PI*2;
+    const spd=180+Math.random()*60;
+    particles.push({
+      x, y,
+      vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd,
+      life: 0.25, maxLife: 0.25,
+      r: 1.5, isLine: true, len: 14,
+      color
+    });
+  }
+}
+
+function updateParticles(dt){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx*dt; p.y+=p.vy*dt;
+    p.vx*=Math.pow(0.06,dt); p.vy*=Math.pow(0.06,dt);
+    p.life-=dt;
+    if(p.life<=0) particles.splice(i,1);
+  }
+}
+
+function drawParticles(ctx){
+  particles.forEach(p=>{
+    const alpha=p.life/p.maxLife;
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    if(p.isLine){
+      const ang=Math.atan2(p.vy,p.vx);
+      ctx.strokeStyle=p.color; ctx.lineWidth=p.r*1.5; ctx.lineCap='round';
+      ctx.beginPath();
+      ctx.moveTo(p.x,p.y);
+      ctx.lineTo(p.x+Math.cos(ang)*p.len*alpha, p.y+Math.sin(ang)*p.len*alpha);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle=p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r*alpha,0,Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    ctx.restore();
+  });
+}
+
+function updateBowShoot(from,to,key,dt){
+  if(from.weapon!=='bow') return;
+  const isP=key==='player';
+  const r1=getR1('bow',isP?playerUpgrade:enemyUpgrade);
+  const r2=getR2('bow',isP?playerUpgrade2:enemyUpgrade2);
+  let interval=ARROW_INTERVAL;
+  if(r1) interval/=(r1.fireRateMult||1);
+  if(r2&&r2.id==='fast_fire') interval/=1.5;
+  arrowTimers[key]+=dt;
+  if(arrowTimers[key]>=interval){
+    arrowTimers[key]=0;
+    const shotKey=key+'Shot';
+    arrowTimers[shotKey]=(arrowTimers[shotKey]||0)+1;
+    // nature_bow uses default spread like no-upgrade bow; wide_bow never spreads
+    const doTriple = r1 ? (r1.id==='dark_bow' ? true : r1.id==='nature_bow' ? true : r1.tripleShot) : true;
+    const extraAngles = r1 ? (r1.id==='nature_bow' ? [-0.28,0.28] : r1.spreadAngles) : [-0.28,0.28];
+    if(doTriple && arrowTimers[shotKey]>=3){
+      arrowTimers[shotKey]=0;
+      shootSpread(from,to,key,extraAngles,r2);
+    } else {
+      shootSingleArrow(from,to,key,r2);
+    }
+  }
+}
+
+function shootSingleArrow(from,to,owner,r2upg){
+  const dx=to.x-from.x,dy=to.y-from.y;
+  const d=Math.sqrt(dx*dx+dy*dy)||1;
+  const spd=320;
+  const homing=r2upg&&r2upg.id==='homing';
+  arrows.push({x:from.x+(dx/d)*(from.r+10),y:from.y+(dy/d)*(from.r+10),vx:(dx/d)*spd,vy:(dy/d)*spd,owner,life:5,homing});
+}
+
+function shootSpread(from,to,owner,extraAngles,r2upg){
+  const dx=to.x-from.x,dy=to.y-from.y;
+  const baseAng=Math.atan2(dy,dx);
+  const spd=320;
+  const homing=r2upg&&r2upg.id==='homing';
+  // center arrow
+  arrows.push({x:from.x+Math.cos(baseAng)*(from.r+10),y:from.y+Math.sin(baseAng)*(from.r+10),vx:Math.cos(baseAng)*spd,vy:Math.sin(baseAng)*spd,owner,life:5,homing});
+  (extraAngles||[]).forEach(off=>{
+    const ang=baseAng+off;
+    arrows.push({x:from.x+Math.cos(ang)*(from.r+10),y:from.y+Math.sin(ang)*(from.r+10),vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,owner,life:5,homing});
+  });
 }
 
 function moveBall(b,dt){
@@ -500,29 +557,24 @@ function moveBall(b,dt){
 }
 
 function ballCollide(a,b){
-  const dx=b.x-a.x, dy=b.y-a.y;
-  const dist=Math.sqrt(dx*dx+dy*dy);
-  const minDist=a.r+b.r;
-  if(dist>=minDist||dist===0) return;
-  const nx=dx/dist, ny=dy/dist;
-  const overlap=(minDist-dist)/2;
-  a.x-=nx*overlap; a.y-=ny*overlap;
-  b.x+=nx*overlap; b.y+=ny*overlap;
-  const dvx=a.vx-b.vx, dvy=a.vy-b.vy;
-  const dot=dvx*nx+dvy*ny;
+  const dx=b.x-a.x,dy=b.y-a.y,dist=Math.sqrt(dx*dx+dy*dy),min=a.r+b.r;
+  if(dist>=min||dist===0) return;
+  const nx=dx/dist,ny=dy/dist,ov=(min-dist)/2;
+  a.x-=nx*ov; a.y-=ny*ov; b.x+=nx*ov; b.y+=ny*ov;
+  const dvx=a.vx-b.vx,dvy=a.vy-b.vy,dot=dvx*nx+dvy*ny;
   if(dot<=0) return;
-  a.vx-=dot*nx; a.vy-=dot*ny;
-  b.vx+=dot*nx; b.vy+=dot*ny;
+  a.vx-=dot*nx; a.vy-=dot*ny; b.vx+=dot*nx; b.vy+=dot*ny;
 }
 
-function updateSword(att, tgt, dt, isPlayer){
+function updateSword(att,tgt,dt,isP){
   const sw=att.sword;
-  const upg = isPlayer ? (playerUpgrade?UPGRADES.sword.find(u=>u.id===playerUpgrade):null) : (enemyUpgrade?UPGRADES.sword.find(u=>u.id===enemyUpgrade):null);
-  const dashMult = upg ? upg.dashMult : 1;
-  const swordLen = upg ? upg.swordLen : SWORD_LEN;
+  const r1=getR1('sword',isP?playerUpgrade:enemyUpgrade);
+  const r2=getR2('sword',isP?playerUpgrade2:enemyUpgrade2);
+  const dashMult=r1?r1.dashMult:1;
+  const sLen=r1?r1.swordLen:SWORD_LEN;
 
-  const toEnemyAngle=Math.atan2(tgt.y-att.y,tgt.x-att.x);
-  const restAngle=toEnemyAngle+Math.PI+0.8;
+  const toE=Math.atan2(tgt.y-att.y,tgt.x-att.x);
+  const restAngle=toE+Math.PI+0.8;
   sw.restAngle=restAngle;
   const dist=Math.sqrt((tgt.x-att.x)**2+(tgt.y-att.y)**2);
   sw.cooldown=Math.max(0,sw.cooldown-dt);
@@ -531,22 +583,19 @@ function updateSword(att, tgt, dt, isPlayer){
     sw.angle=lerpAngle(sw.angle,restAngle,Math.min(1,dt*8));
     sw.dashTimer=Math.max(0,sw.dashTimer-dt);
     if(sw.dashTimer<=0){
-      const upg2=isPlayer?(playerUpgrade2?UPGRADES2.sword.find(u=>u.id===playerUpgrade2):null):(enemyUpgrade2?UPGRADES2.sword.find(u=>u.id===enemyUpgrade2):null);
-      sw.dashTimer=upg2&&upg2.id==='fast_dash'?1.0:2.0;
-      const nx=(tgt.x-att.x), ny=(tgt.y-att.y);
-      const nd=Math.sqrt(nx*nx+ny*ny)||1;
-      att.vx+=(nx/nd)*160*dashMult;
-      att.vy+=(ny/nd)*160*dashMult;
+      const dashCool=r2&&r2.id==='fast_dash'?1.0:2.0;
+      sw.dashTimer=dashCool;
+      const nx=tgt.x-att.x,ny=tgt.y-att.y,nd=Math.sqrt(nx*nx+ny*ny)||1;
+      att.vx+=(nx/nd)*160*dashMult; att.vy+=(ny/nd)*160*dashMult;
     }
-    if(dist<(swordLen+R+R+10) && sw.cooldown<=0){
-      sw.state='slash'; sw.timer=0; sw.hitDealt=false;
-      sw.slashAngle=toEnemyAngle;
+    if(dist<(sLen+R+R+10)&&sw.cooldown<=0){
+      sw.state='slash'; sw.timer=0; sw.hitDealt=false; sw.slashAngle=toE;
     }
   } else if(sw.state==='slash'){
     sw.timer+=dt;
     const p=Math.min(1,sw.timer/sw.slashDur);
     sw.angle=lerpAngle(restAngle,sw.slashAngle,easeOut(p));
-    if(!sw.hitDealt) checkSwordBlade(att,tgt,sw.angle,sw,isPlayer,swordLen);
+    if(!sw.hitDealt) checkSwordBlade(att,tgt,sw.angle,sw,isP,sLen);
     if(sw.timer>=sw.slashDur){ sw.state='recover'; sw.timer=0; }
   } else if(sw.state==='recover'){
     sw.timer+=dt;
@@ -556,13 +605,54 @@ function updateSword(att, tgt, dt, isPlayer){
   }
 }
 
-function easeOut(t){ return 1-(1-t)*(1-t); }
+function checkSwordBlade(att,tgt,angle,sw,isP,sLen){
+  const r1=getR1('sword',isP?playerUpgrade:enemyUpgrade);
+  const r2=getR2('sword',isP?playerUpgrade2:enemyUpgrade2);
+  const r3=getR3(isP?playerUpgrade3:enemyUpgrade3);
+  let dmg=r1?r1.damageMult:1;
+  if(r2&&r2.id==='crit_sword'&&Math.random()<0.25) dmg+=2;
+  if(r3&&r3.id==='r3_crit'&&Math.random()<0.15) dmg+=2;
+  if(r3&&r3.id==='r3_dmg') dmg+=1;
 
-function updateShield(b, dt){
+  const isWide=r1&&r1.id==='wide';
+  const bladeW=isWide?9:SWORD_W;
+  const s0=att.r, s1=att.r+(sLen||SWORD_LEN);
+
+  // shield block check
+  if(tgt.weapon==='shield'&&tgt.shield.blocking){
+    const isPS=tgt===player;
+    const upgS=getR1('shield',isPS?playerUpgrade:enemyUpgrade);
+    const isDark=upgS&&upgS.id==='dark_shield';
+    const blockR=isDark?tgt.r+32:tgt.r+bladeW/2;
+    for(let t=0;t<=1;t+=0.1){
+      const d=s0+(s1-s0)*t;
+      const bx=att.x+Math.cos(angle)*d,by=att.y+Math.sin(angle)*d;
+      if(Math.sqrt((bx-tgt.x)**2+(by-tgt.y)**2)<blockR){
+        const nx=att.x-tgt.x,ny=att.y-tgt.y,nd=Math.sqrt(nx*nx+ny*ny)||1;
+        att.vx=(nx/nd)*PUSH_SCALE*1.4; att.vy=(ny/nd)*PUSH_SCALE*1.4;
+        damage(att,dmg); sw.hitDealt=true; break;
+      }
+    }
+    return;
+  }
+
+  for(let t=0;t<=1;t+=0.1){
+    const d=s0+(s1-s0)*t;
+    const bx=att.x+Math.cos(angle)*d,by=att.y+Math.sin(angle)*d;
+    if(Math.sqrt((bx-tgt.x)**2+(by-tgt.y)**2)<tgt.r+bladeW/2){
+      const nx=tgt.x-att.x,ny=tgt.y-att.y,nd=Math.sqrt(nx*nx+ny*ny)||1;
+      tgt.vx=(nx/nd)*PUSH_SCALE; tgt.vy=(ny/nd)*PUSH_SCALE;
+      damage(tgt,dmg); sw.hitDealt=true; break;
+    }
+  }
+}
+
+function updateShield(b,dt,isP){
   const sh=b.shield;
-  const isPlayer=b===player;
-  const upg=isPlayer?(playerUpgrade?UPGRADES.shield.find(u=>u.id===playerUpgrade):null):(enemyUpgrade?UPGRADES.shield.find(u=>u.id===enemyUpgrade):null);
-  const cycle = upg&&upg.id==='dark_shield' ? SHIELD_CYCLE+2 : SHIELD_CYCLE;
+  const r1=getR1('shield',isP?playerUpgrade:enemyUpgrade);
+  const isDark=r1&&r1.id==='dark_shield';
+  const isSpike=r1&&r1.id==='spike_shield';
+  const cycle=isDark?SHIELD_CYCLE+2:SHIELD_CYCLE;
   if(sh.blocking){
     sh.blockTimer-=dt;
     if(sh.blockTimer<=0){ sh.blocking=false; sh.timer=0; }
@@ -570,62 +660,14 @@ function updateShield(b, dt){
     sh.timer+=dt;
     if(sh.timer>=cycle){ sh.blocking=true; sh.blockTimer=SHIELD_DURATION; sh.timer=0; }
   }
-  // spike shield: deal contact damage to enemy on collision
-  if(upg&&upg.id==='spike_shield'){
+  if(isSpike){
     const tgt=b===player?enemy:player;
-    const dx=tgt.x-b.x, dy=tgt.y-b.y;
-    const dist=Math.sqrt(dx*dx+dy*dy);
-    if(dist<b.r+tgt.r+8){ damage(tgt,1); }
+    const dx=tgt.x-b.x,dy=tgt.y-b.y;
+    if(Math.sqrt(dx*dx+dy*dy)<b.r+tgt.r+8) damage(tgt,1);
   }
 }
 
-function checkSwordBlade(att,tgt,angle,sw,isPlayer,swordLen){
-  const len = swordLen || SWORD_LEN;
-  const s0=att.r, s1=att.r+len;
-  const upg = isPlayer ? (playerUpgrade?UPGRADES.sword.find(u=>u.id===playerUpgrade):null) : (enemyUpgrade?UPGRADES.sword.find(u=>u.id===enemyUpgrade):null);
-  const upg2c=isPlayer?(playerUpgrade2?UPGRADES2.sword.find(u=>u.id===playerUpgrade2):null):(enemyUpgrade2?UPGRADES2.sword.find(u=>u.id===enemyUpgrade2):null);
-  const baseDmg = upg ? upg.damageMult : 1;
-  const crit = upg2c&&upg2c.id==='crit'&&Math.random()<0.25;
-  const dmg = crit ? baseDmg+1 : baseDmg; // crit adds +1
-  // if target is blocking with shield, negate damage and push attacker back
-  if(tgt.shield && tgt.shield.blocking){
-    const isPlayerShield=tgt===player;
-    const upgS2=(isPlayerShield&&playerUpgrade)?UPGRADES.shield.find(u=>u.id===playerUpgrade):null;
-    const isDark2=upgS2&&upgS2.id==='dark_shield';
-    const isSpike=upgS2&&upgS2.id==='spike_shield';
-    const blockR = isDark2 ? tgt.r+32 : tgt.r+SWORD_W/2;
-    for(let t=0;t<=1;t+=0.1){
-      const d=s0+(s1-s0)*t;
-      const bx=att.x+Math.cos(angle)*d, by=att.y+Math.sin(angle)*d;
-      const dx=bx-tgt.x, dy=by-tgt.y;
-      if(Math.sqrt(dx*dx+dy*dy)<blockR){
-        const nx=(att.x-tgt.x), ny=(att.y-tgt.y);
-        const nd=Math.sqrt(nx*nx+ny*ny)||1;
-        att.vx=(nx/nd)*PUSH_SCALE*1.4; att.vy=(ny/nd)*PUSH_SCALE*1.4;
-        const reflectDmg = dmg;
-        damage(att, reflectDmg);
-        sw.hitDealt=true;
-        break;
-      }
-    }
-    return;
-  }
-  for(let t=0;t<=1;t+=0.1){
-    const d=s0+(s1-s0)*t;
-    const bx=att.x+Math.cos(angle)*d, by=att.y+Math.sin(angle)*d;
-    const dx=bx-tgt.x, dy=by-tgt.y;
-    if(Math.sqrt(dx*dx+dy*dy)<tgt.r+SWORD_W/2){
-      const nx=(tgt.x-att.x), ny=(tgt.y-att.y);
-      const nd=Math.sqrt(nx*nx+ny*ny)||1;
-      tgt.vx=(nx/nd)*PUSH_SCALE; tgt.vy=(ny/nd)*PUSH_SCALE;
-      damage(tgt, dmg);
-      sw.hitDealt=true;
-      break;
-    }
-  }
-}
-
-function damage(b, amt=1){
+function damage(b,amt=1){
   const key=b===player?'player':'enemy';
   const now=performance.now();
   if(now-lastHit[key]<450) return;
@@ -635,36 +677,11 @@ function damage(b, amt=1){
   if(b.hp<=0){ b.alive=false; endGame(b===player?'lose':'win'); }
 }
 
-function shootArrow(from,to,owner){
-  const dx=to.x-from.x,dy=to.y-from.y;
-  const d=Math.sqrt(dx*dx+dy*dy)||1;
-  const isP=from===player;
-  const upg2a=isP?(playerUpgrade2?UPGRADES2.bow.find(u=>u.id===playerUpgrade2):null):(enemyUpgrade2?UPGRADES2.bow.find(u=>u.id===enemyUpgrade2):null);
-  const spd=320;
-  const homing=upg2a&&upg2a.id==='homing';
-  arrows.push({x:from.x+(dx/d)*(from.r+10),y:from.y+(dy/d)*(from.r+10),vx:(dx/d)*spd,vy:(dy/d)*spd,owner,life:5,homing});
-}
-
-function shootTriple(from,to,owner,spreadAngles){
-  const dx=to.x-from.x,dy=to.y-from.y;
-  const isP=from===player;
-  const upg2t=isP?(playerUpgrade2?UPGRADES2.bow.find(u=>u.id===playerUpgrade2):null):(enemyUpgrade2?UPGRADES2.bow.find(u=>u.id===enemyUpgrade2):null);
-  const spd=320;
-  const homing=upg2t&&upg2t.id==='homing';
-  const baseAng=Math.atan2(dy,dx);
-  arrows.push({x:from.x+Math.cos(baseAng)*(from.r+10),y:from.y+Math.sin(baseAng)*(from.r+10),vx:Math.cos(baseAng)*spd,vy:Math.sin(baseAng)*spd,owner,life:5,homing});
-  (spreadAngles||[-0.28,0.28]).forEach(offset=>{
-    const ang=baseAng+offset;
-    arrows.push({x:from.x+Math.cos(ang)*(from.r+10),y:from.y+Math.sin(ang)*(from.r+10),vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,owner,life:5,homing});
-  });
-}
-
 // ── DRAW ──
 function draw(){
   const cv=document.getElementById('arena-canvas');
   const ctx=cv.getContext('2d');
   ctx.fillStyle='#0d0d16'; ctx.fillRect(0,0,W,H);
-
   ctx.strokeStyle='rgba(36,36,62,.8)'; ctx.lineWidth=1;
   for(let x=0;x<=W;x+=40){ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke(); }
   for(let y=0;y<=H;y+=40){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke(); }
@@ -682,18 +699,20 @@ function draw(){
     ctx.restore();
   });
 
+  drawParticles(ctx);
+
   drawBallBody(ctx,player);
   drawBallBody(ctx,enemy);
-  if(player.weapon==='bow') drawBow(ctx,player);
-  if(enemy.weapon==='bow')  drawBow(ctx,enemy);
+  if(player.weapon==='bow')    drawBow(ctx,player,true);
+  if(enemy.weapon==='bow')     drawBow(ctx,enemy,false);
   if(player.weapon==='shield') drawShield(ctx,player,true);
   if(enemy.weapon==='shield')  drawShield(ctx,enemy,false);
 
   const sc=document.getElementById('sword-canvas');
   const sctx=sc.getContext('2d');
   sctx.clearRect(0,0,W,H);
-  if(player.weapon==='sword' && player.alive) drawSword(sctx,player,true);
-  if(enemy.weapon==='sword'  && enemy.alive)  drawSword(sctx,enemy,false);
+  if(player.weapon==='sword'&&player.alive) drawSword(sctx,player,true);
+  if(enemy.weapon==='sword'&&enemy.alive)   drawSword(sctx,enemy,false);
 }
 
 function drawBallBody(ctx,b){
@@ -708,191 +727,68 @@ function drawBallBody(ctx,b){
   ctx.strokeStyle=b.color; ctx.lineWidth=2; ctx.stroke();
 }
 
-function drawSword(ctx,b,isPlayer){
+function drawSword(ctx,b,isP){
   const sw=b.sword;
+  const r1=getR1('sword',isP?playerUpgrade:enemyUpgrade);
+  const sLen=r1?r1.swordLen:SWORD_LEN;
+  const isCurved=r1&&r1.id==='curved';
+  const isWide=r1&&r1.id==='wide';
   const angle=sw.angle;
-  const upg = isPlayer ? (playerUpgrade?UPGRADES.sword.find(u=>u.id===playerUpgrade):null) : (enemyUpgrade?UPGRADES.sword.find(u=>u.id===enemyUpgrade):null);
-  const swordLen = upg ? upg.swordLen : SWORD_LEN;
-  const isCurved = upg && upg.id==='curved';
-  const isWide   = upg && upg.id==='wide';
 
   ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(angle);
   const s=b.r+1;
-
-  // handle
   ctx.strokeStyle='#7a5810'; ctx.lineWidth=5; ctx.lineCap='butt';
   ctx.beginPath(); ctx.moveTo(s,0); ctx.lineTo(s+10,0); ctx.stroke();
-
-  // guard
   ctx.strokeStyle='#c9a227'; ctx.lineWidth=isWide?5:3;
   ctx.beginPath(); ctx.moveTo(s+10,isWide?-13:-9); ctx.lineTo(s+10,isWide?13:9); ctx.stroke();
 
-  const bs=s+10, be=s+swordLen;
-
+  const bs=s+10,be=s+sLen;
   if(isCurved){
-    // draw curved blade as arc
-    ctx.save();
     ctx.strokeStyle='#a0d8ff'; ctx.lineWidth=4; ctx.lineCap='round';
-    ctx.beginPath();
-    // simulate curve: draw quadratic bezier
-    ctx.moveTo(bs,0);
-    ctx.quadraticCurveTo(bs+(be-bs)*0.5, -14, be, -4);
-    ctx.stroke();
-    // shine
+    ctx.beginPath(); ctx.moveTo(bs,0);
+    ctx.quadraticCurveTo(bs+(be-bs)*0.5,-14,be,-4); ctx.stroke();
     ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1.5;
-    ctx.beginPath();
-    ctx.moveTo(bs+4,0);
-    ctx.quadraticCurveTo(bs+(be-bs)*0.5,-8,be-4,-3);
-    ctx.stroke();
-    ctx.restore();
+    ctx.beginPath(); ctx.moveTo(bs+4,0);
+    ctx.quadraticCurveTo(bs+(be-bs)*0.5,-8,be-4,-3); ctx.stroke();
   } else {
-    // straight blade (normal or wide)
-    const bladeW = isWide ? 9 : SWORD_W;
+    const bw=isWide?9:SWORD_W;
     const gr=ctx.createLinearGradient(bs,0,be,0);
     gr.addColorStop(0,'#e8e8ff'); gr.addColorStop(.5,isWide?'#d0a0ff':'#b8c0ff'); gr.addColorStop(1,'rgba(160,170,255,0)');
-    ctx.strokeStyle=gr; ctx.lineWidth=bladeW; ctx.lineCap='round';
+    ctx.strokeStyle=gr; ctx.lineWidth=bw; ctx.lineCap='round';
     ctx.beginPath(); ctx.moveTo(bs,0); ctx.lineTo(be,0); ctx.stroke();
     ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1.5;
     ctx.beginPath(); ctx.moveTo(bs+2,-2); ctx.lineTo(be-4,-1); ctx.stroke();
   }
-
   ctx.restore();
 }
 
-function drawShield(ctx,b,isPlayer){
-  const sh=b.shield;
-  const upg=isPlayer?(playerUpgrade?UPGRADES.shield.find(u=>u.id===playerUpgrade):null):(enemyUpgrade?UPGRADES.shield.find(u=>u.id===enemyUpgrade):null);
-  const isDark=upg&&upg.id==='dark_shield';
-  const isSpike=upg&&upg.id==='spike_shield';
-  const blocking=sh.blocking;
-  const cycle=isDark?SHIELD_CYCLE+2:SHIELD_CYCLE;
-
-  const toEnemy= b===player
-    ? Math.atan2(enemy.y-b.y, enemy.x-b.x)
-    : Math.atan2(player.y-b.y, player.x-b.x);
-
-  if(isDark){
-    // dark shield: draw ) like normal but darker, PLUS yellow field circle
-    ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(toEnemy);
-    const x0d=b.r+10, hd=28, bulged=14;
-    if(blocking){
-      ctx.shadowColor='rgba(180,140,0,0.7)'; ctx.shadowBlur=10;
-      ctx.strokeStyle='#7a6010'; ctx.lineWidth=5; ctx.lineCap='round';
-    } else {
-      const fd=sh.timer/cycle;
-      ctx.globalAlpha=0.25+fd*0.35;
-      ctx.strokeStyle='#4a3a08'; ctx.lineWidth=4; ctx.lineCap='round';
-    }
-    ctx.beginPath();
-    ctx.moveTo(x0d,-hd);
-    ctx.quadraticCurveTo(x0d+bulged,0,x0d,hd);
-    ctx.stroke();
-    ctx.shadowBlur=0; ctx.globalAlpha=1;
-    ctx.restore();
-
-    // yellow field circle
-    const fieldR=b.r+40;
-    if(blocking){
-      const glow=ctx.createRadialGradient(b.x,b.y,b.r+20,b.x,b.y,fieldR+6);
-      glow.addColorStop(0,'rgba(255,220,80,0.15)');
-      glow.addColorStop(1,'rgba(255,180,0,0)');
-      ctx.beginPath(); ctx.arc(b.x,b.y,fieldR+6,0,Math.PI*2);
-      ctx.fillStyle=glow; ctx.fill();
-      ctx.strokeStyle='rgba(255,210,60,0.8)'; ctx.lineWidth=2.5;
-      ctx.beginPath(); ctx.arc(b.x,b.y,fieldR,0,Math.PI*2); ctx.stroke();
-    } else {
-      const frac=sh.timer/cycle;
-      ctx.globalAlpha=0.12+frac*0.25;
-      ctx.strokeStyle='#c9a227'; ctx.lineWidth=1.5;
-      ctx.beginPath(); ctx.arc(b.x,b.y,fieldR,0,Math.PI*2); ctx.stroke();
-      ctx.globalAlpha=1;
-    }
-  } else {
-    // normal ) or spike shield
-    ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(toEnemy);
-    const x0=b.r+10, h=28, bulge=14;
-
-    if(blocking){
-      ctx.shadowColor=isSpike?'rgba(255,80,80,0.9)':'rgba(255,220,80,0.9)';
-      ctx.shadowBlur=18;
-      ctx.strokeStyle=isSpike?'#ff6060':'#ffe066';
-      ctx.lineWidth=5; ctx.lineCap='round';
-    } else {
-      const f=sh.timer/cycle;
-      ctx.globalAlpha=0.3+f*0.5;
-      ctx.strokeStyle=isSpike?'#882020':'#b08820';
-      ctx.lineWidth=4; ctx.lineCap='round';
-    }
-
-    ctx.beginPath();
-    ctx.moveTo(x0,-h);
-    ctx.quadraticCurveTo(x0+bulge,0,x0,h);
-    ctx.stroke();
-    ctx.shadowBlur=0;
-
-    // draw spikes on spike shield
-    if(isSpike){
-      ctx.strokeStyle=blocking?'#ff9090':'rgba(180,60,60,0.6)';
-      ctx.lineWidth=2; ctx.lineCap='round';
-      const spikeCount=5;
-      for(let i=0;i<spikeCount;i++){
-        const t=i/(spikeCount-1);
-        const px=x0+bulge*Math.sin(Math.PI*t);
-        const py=-h+h*2*t;
-        const outx=px+8, outy=py;
-        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(outx,outy); ctx.stroke();
-      }
-    }
-
-    ctx.globalAlpha=1;
-    ctx.restore();
-  }
-
-  // cooldown arc around ball
-  if(!blocking){
-    const frac=sh.timer/cycle;
-    ctx.save(); ctx.translate(b.x,b.y);
-    ctx.strokeStyle=isDark?'rgba(160,60,255,0.5)':isSpike?'rgba(255,80,80,0.5)':'rgba(255,200,50,0.5)';
-    ctx.lineWidth=2;
-    ctx.beginPath();
-    ctx.arc(0,0,b.r+3,-Math.PI/2,-Math.PI/2+frac*Math.PI*2);
-    ctx.stroke();
-    ctx.restore();
-  } else {
-    const frac=sh.blockTimer/SHIELD_DURATION;
-    ctx.save(); ctx.translate(b.x,b.y);
-    ctx.strokeStyle=isDark?'rgba(180,80,255,0.9)':isSpike?'rgba(255,100,100,0.9)':'rgba(255,230,80,0.9)';
-    ctx.lineWidth=3;
-    ctx.beginPath();
-    ctx.arc(0,0,b.r+3,-Math.PI/2,-Math.PI/2+frac*Math.PI*2);
-    ctx.stroke();
-    ctx.restore();
-  }
-}
-
-function drawBow(ctx,b){
-  const isPlayer = b===player;
-  const upg = isPlayer ? (playerUpgrade?UPGRADES.bow.find(u=>u.id===playerUpgrade):null) : (enemyUpgrade?UPGRADES.bow.find(u=>u.id===enemyUpgrade):null);
-
+function drawBow(ctx,b,isP){
+  const r1=getR1('bow',isP?playerUpgrade:enemyUpgrade);
   ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.aimAngle);
   const d=b.r+14;
-
-  if(upg && upg.id==='wide_bow'){
-    // wider bow — bigger arc
+  if(r1&&r1.id==='wide_bow'){
     ctx.strokeStyle='#e0c040'; ctx.lineWidth=3.5;
     ctx.beginPath(); ctx.arc(d,0,22,-Math.PI*.7,Math.PI*.7); ctx.stroke();
     const sy=Math.sin(Math.PI*.7)*22;
     ctx.strokeStyle='#ffffc0'; ctx.lineWidth=1.2;
     ctx.beginPath(); ctx.moveTo(d,-sy); ctx.lineTo(d+6,0); ctx.lineTo(d,sy); ctx.stroke();
-  } else if(upg && upg.id==='dark_bow'){
-    // dark brown bow
+  } else if(r1&&r1.id==='dark_bow'){
     ctx.strokeStyle='#5c3010'; ctx.lineWidth=3;
     ctx.beginPath(); ctx.arc(d,0,16,-Math.PI*.65,Math.PI*.65); ctx.stroke();
     const sy=Math.sin(Math.PI*.65)*16;
     ctx.strokeStyle='#9c7040'; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(d,-sy); ctx.lineTo(d+4,0); ctx.lineTo(d,sy); ctx.stroke();
+  } else if(r1&&r1.id==='nature_bow'){
+    // green vine bow
+    ctx.strokeStyle='#3a8c3a'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(d,0,16,-Math.PI*.65,Math.PI*.65); ctx.stroke();
+    const sy=Math.sin(Math.PI*.65)*16;
+    ctx.strokeStyle='#a0e060'; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(d,-sy); ctx.lineTo(d+4,0); ctx.lineTo(d,sy); ctx.stroke();
+    // vine leaf decoration
+    ctx.fillStyle='#4ab84a'; ctx.beginPath();
+    ctx.ellipse(d+6,-4,5,3,-0.5,0,Math.PI*2); ctx.fill();
   } else {
-    // default bow
     ctx.strokeStyle='#c9a227'; ctx.lineWidth=2.5;
     ctx.beginPath(); ctx.arc(d,0,16,-Math.PI*.65,Math.PI*.65); ctx.stroke();
     const sy=Math.sin(Math.PI*.65)*16;
@@ -902,107 +798,188 @@ function drawBow(ctx,b){
   ctx.restore();
 }
 
+function drawShield(ctx,b,isP){
+  const sh=b.shield;
+  const r1=getR1('shield',isP?playerUpgrade:enemyUpgrade);
+  const isDark=r1&&r1.id==='dark_shield';
+  const isSpike=r1&&r1.id==='spike_shield';
+  const cycle=isDark?SHIELD_CYCLE+2:SHIELD_CYCLE;
+  const blocking=sh.blocking;
+  const toEnemy=b===player?Math.atan2(enemy.y-b.y,enemy.x-b.x):Math.atan2(player.y-b.y,player.x-b.x);
+
+  if(isDark){
+    ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(toEnemy);
+    const x0d=b.r+10,hd=28,bul=14;
+    if(blocking){
+      ctx.shadowColor='rgba(180,140,0,0.7)'; ctx.shadowBlur=10;
+      ctx.strokeStyle='#7a6010'; ctx.lineWidth=5; ctx.lineCap='round';
+    } else {
+      ctx.globalAlpha=0.25+(sh.timer/cycle)*0.35;
+      ctx.strokeStyle='#4a3a08'; ctx.lineWidth=4; ctx.lineCap='round';
+    }
+    ctx.beginPath(); ctx.moveTo(x0d,-hd); ctx.quadraticCurveTo(x0d+bul,0,x0d,hd); ctx.stroke();
+    ctx.shadowBlur=0; ctx.globalAlpha=1; ctx.restore();
+    const fieldR=b.r+40;
+    if(blocking){
+      const glow=ctx.createRadialGradient(b.x,b.y,b.r+20,b.x,b.y,fieldR+6);
+      glow.addColorStop(0,'rgba(255,220,80,0.15)'); glow.addColorStop(1,'rgba(255,180,0,0)');
+      ctx.beginPath(); ctx.arc(b.x,b.y,fieldR+6,0,Math.PI*2); ctx.fillStyle=glow; ctx.fill();
+      ctx.strokeStyle='rgba(255,210,60,0.8)'; ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.arc(b.x,b.y,fieldR,0,Math.PI*2); ctx.stroke();
+    } else {
+      ctx.globalAlpha=0.12+(sh.timer/cycle)*0.25;
+      ctx.strokeStyle='#c9a227'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(b.x,b.y,fieldR,0,Math.PI*2); ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+  } else {
+    ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(toEnemy);
+    const x0=b.r+10,h=28,bul=14;
+    if(blocking){
+      ctx.shadowColor=isSpike?'rgba(255,80,80,0.9)':'rgba(255,220,80,0.9)';
+      ctx.shadowBlur=18;
+      ctx.strokeStyle=isSpike?'#ff6060':'#ffe066';
+      ctx.lineWidth=5; ctx.lineCap='round';
+    } else {
+      ctx.globalAlpha=0.3+(sh.timer/cycle)*0.5;
+      ctx.strokeStyle=isSpike?'#882020':'#b08820';
+      ctx.lineWidth=4; ctx.lineCap='round';
+    }
+    ctx.beginPath(); ctx.moveTo(x0,-h); ctx.quadraticCurveTo(x0+bul,0,x0,h); ctx.stroke();
+    ctx.shadowBlur=0;
+    if(isSpike){
+      ctx.strokeStyle=blocking?'#ff9090':'rgba(180,60,60,0.6)';
+      ctx.lineWidth=2; ctx.lineCap='round';
+      for(let i=0;i<5;i++){
+        const t=i/4,px=x0+bul*Math.sin(Math.PI*t),py=-h+h*2*t;
+        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+8,py); ctx.stroke();
+      }
+    }
+    ctx.globalAlpha=1; ctx.restore();
+  }
+  // cooldown arc
+  if(!blocking){
+    const frac=sh.timer/cycle;
+    ctx.save(); ctx.translate(b.x,b.y);
+    ctx.strokeStyle=isDark?'rgba(160,60,255,0.5)':isSpike?'rgba(255,80,80,0.5)':'rgba(255,200,50,0.5)';
+    ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(0,0,b.r+3,-Math.PI/2,-Math.PI/2+frac*Math.PI*2); ctx.stroke();
+    ctx.restore();
+  } else {
+    const frac=sh.blockTimer/SHIELD_DURATION;
+    ctx.save(); ctx.translate(b.x,b.y);
+    ctx.strokeStyle=isDark?'rgba(180,80,255,0.9)':isSpike?'rgba(255,100,100,0.9)':'rgba(255,230,80,0.9)';
+    ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,b.r+3,-Math.PI/2,-Math.PI/2+frac*Math.PI*2); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ── END GAME & UPGRADES ──
 function endGame(result){
   if(!gameRunning||gameEnded) return;
-  gameEnded=true; gameRunning=false; cancelAnimationFrame(animFrame); animFrame=null;
+  gameEnded=true; gameRunning=false;
+  clearInterval(animFrame); animFrame=null;
   setTimeout(()=>{
     roundCount++;
     if(roundCount===1){
-      const eUpgrades=UPGRADES[enemyWeapon]||[];
-      enemyUpgrade=eUpgrades.length>0?eUpgrades[Math.floor(Math.random()*eUpgrades.length)].id:null;
-      showUpgradeScreen(result,1);
+      // pick enemy R1 upgrade
+      const pool=UPGRADES_R1[enemyWeapon]||[];
+      enemyUpgrade=pool.length?pool[Math.floor(Math.random()*pool.length)].id:null;
+      showUpgradeScreen(1);
     } else if(roundCount===2){
-      const eUpgrades2=UPGRADES2[enemyWeapon]||[];
-      enemyUpgrade2=eUpgrades2.length>0?eUpgrades2[Math.floor(Math.random()*eUpgrades2.length)].id:null;
-      showUpgradeScreen(result,2);
+      const pool=UPGRADES_R2[enemyWeapon]||[];
+      enemyUpgrade2=pool.length?pool[Math.floor(Math.random()*pool.length)].id:null;
+      showUpgradeScreen(2);
+    } else if(roundCount===3){
+      // R3: enemy gets random universal passive
+      enemyUpgrade3=UPGRADES_R3[Math.floor(Math.random()*UPGRADES_R3.length)].id;
+      showUpgradeScreen(3);
     } else {
       showResult(result);
     }
   },500);
 }
 
-function showResult(result){
-  const title = result==='win'?'Victory!':result==='lose'?'Defeat':'Draw';
-  const sub   = result==='win'?'Enemy defeated':result==='lose'?'Try again':'Both fell';
-  const cls   = result==='win'?'win':result==='lose'?'lose':'draw';
-  // hide all screens
-  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
-  // build result screen content fresh
-  const screen = document.getElementById('result-screen');
-  if(!screen) return;
-  screen.innerHTML = `
-    <div class="result-title ${cls}">${title}</div>
-    <div class="result-sub">${sub}</div>
-    <button class="btn-rematch" onclick="rematch()">Rematch</button>
-    <button class="btn-menu" onclick="goMenu()">Main Menu</button>
-  `;
-  screen.classList.remove('hidden');
-}
-
-// ── UPGRADE SCREEN ──
-let _pendingRound=1;
-function showUpgradeScreen(pendingResult,round){
-  _pendingRound=round||1;
-  const upgPool = round===2 ? UPGRADES2 : UPGRADES;
-  const upgrades = upgPool[playerWeapon] || [];
-  if(upgrades.length===0){
-    showResult(pendingResult);
-    return;
-  }
+function showUpgradeScreen(rnd){
+  currentUpgradeRound=rnd;
   selectedUpgradeId=null;
-  const roundLabel = round===2 ? 'Round 2 Upgrade' : 'Upgrade Your Weapon';
-  const subText = pendingResult==='win'?'You won — upgrade and fight again':pendingResult==='lose'?'You lost — pick your upgrade':'Choose your path';
+  let pool, title, sub;
+  if(rnd===1){
+    pool=UPGRADES_R1[playerWeapon]||[];
+    title='Weapon Upgrade';
+    sub='Choose your path — round 2 awaits';
+  } else if(rnd===2){
+    pool=UPGRADES_R2[playerWeapon]||[];
+    title='Advanced Upgrade';
+    sub='Enhance your fighting style';
+  } else {
+    pool=UPGRADES_R3;
+    title='Final Upgrade';
+    sub='Choose a universal passive';
+  }
 
-  const cardsHtml = upgrades.map(upg=>{
-    const stats=(upg.stats||[]).map(s=>`<span class="stat-pill ${s.g?'stat-good':'stat-bad'}">${s.t}</span>`).join('');
-    return `<div class="upgrade-card" id="upg-${upg.id}" onclick="selectUpgrade('${upg.id}')">
+  document.getElementById('upg-title').textContent=title;
+  document.getElementById('upg-sub').textContent=sub;
+  const btn=document.getElementById('btn-upgrade');
+  btn.classList.remove('active');
+
+  const grid=document.getElementById('upgrade-grid');
+  grid.innerHTML=pool.map(u=>{
+    const stats=(u.stats||[]).map(s=>`<span class="stat-pill ${s.g?'stat-good':'stat-bad'}">${s.t}</span>`).join('');
+    return `<div class="upgrade-card" id="upg-${u.id}" onclick="selectUpgrade('${u.id}')">
       <div class="upgrade-badge">✓</div>
-      <span class="upgrade-icon">${upg.icon}</span>
-      <div class="upgrade-name">${upg.name}</div>
-      <div class="upgrade-desc">${upg.desc}</div>
+      <span class="upgrade-icon">${u.icon}</span>
+      <div class="upgrade-name">${u.name}</div>
+      <div class="upgrade-desc">${u.desc}</div>
       <div class="upgrade-stats">${stats}</div>
     </div>`;
   }).join('');
 
-  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
-  const screen = document.getElementById('upgrade-screen');
-  screen.innerHTML = `
-    <div class="upgrade-title">${roundLabel}</div>
-    <div class="upgrade-sub">${subText}</div>
-    <div class="upgrade-grid">${cardsHtml}</div>
-    <button class="btn-upgrade visible" id="btn-upgrade-hidden" style="opacity:0;pointer-events:none" onclick="applyUpgrade()">Upgrade &amp; Fight</button>
-  `;
-  screen.classList.remove('hidden');
+  showScreen('upgrade-screen');
 }
 
 function selectUpgrade(id){
   selectedUpgradeId=id;
   document.querySelectorAll('.upgrade-card').forEach(c=>c.classList.remove('selected'));
-  const card=document.getElementById('upg-'+id);
-  if(card) card.classList.add('selected');
-  const btn=document.getElementById('btn-upgrade-hidden');
-  if(btn){ btn.style.opacity='1'; btn.style.pointerEvents='all'; }
+  const el=document.getElementById('upg-'+id);
+  if(el) el.classList.add('selected');
+  document.getElementById('btn-upgrade').classList.add('active');
 }
 
 function applyUpgrade(){
   if(!selectedUpgradeId) return;
-  if(_pendingRound===2) playerUpgrade2=selectedUpgradeId;
-  else playerUpgrade=selectedUpgradeId;
+  if(currentUpgradeRound===1)      playerUpgrade=selectedUpgradeId;
+  else if(currentUpgradeRound===2) playerUpgrade2=selectedUpgradeId;
+  else                             playerUpgrade3=selectedUpgradeId;
   rematch();
+}
+
+function showResult(result){
+  const t=result==='win'?'Victory!':result==='lose'?'Defeat':'Draw';
+  const s=result==='win'?'Enemy defeated':result==='lose'?'Try again':'Both fell';
+  const c=result==='win'?'win':result==='lose'?'lose':'draw';
+  document.getElementById('result-title').textContent=t;
+  document.getElementById('result-title').className='result-title '+c;
+  document.getElementById('result-sub').textContent=s;
+  showScreen('result-screen');
 }
 
 function rematch(){
   showScreen('arena-screen');
   initBalls();
   gameRunning=true; lastTime=performance.now();
-  animFrame=setInterval(loop, 1000/60);
+  animFrame=setInterval(loop,1000/60);
 }
 
 function goMenu(){
-  showScreen('menu-screen');
-  playerWeapon=null; playerUpgrade=null; enemyUpgrade=null; playerUpgrade2=null; enemyUpgrade2=null; roundCount=0;
+  clearInterval(animFrame); animFrame=null;
+  playerWeapon=enemyWeapon=null;
+  playerUpgrade=enemyUpgrade=playerUpgrade2=enemyUpgrade2=playerUpgrade3=enemyUpgrade3=null;
+  roundCount=0;
   document.querySelectorAll('.weapon-card').forEach(c=>c.classList.remove('selected'));
   document.getElementById('btn-fight').classList.remove('visible');
+  showScreen('menu-screen');
 }
 </script>
 </body>
