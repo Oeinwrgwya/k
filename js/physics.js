@@ -2,7 +2,6 @@ function angleDiff(a,b){let d=((b-a+Math.PI*3)%(Math.PI*2))-Math.PI;return d;}
 function lerpAngle(a,b,t){return a+angleDiff(a,b)*t;}
 function easeOut(t){return 1-(1-t)*(1-t);}
 function makeSword(){return{state:'rest',angle:0,restAngle:0,slashAngle:0,timer:0,hitDealt:false,slashDur:0.13,recoverDur:0.25,cooldown:0,dashTimer:1.0+Math.random()};}
-
 function moveBall(b,dt){
   b.x+=b.vx*dt;b.y+=b.vy*dt;
   if(b.x<b.r){b.x=b.r;b.vx=Math.abs(b.vx)*WALL_BOUNCE;}
