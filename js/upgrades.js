@@ -5,7 +5,7 @@ const UPGRADES_R1={
   ],
   bow:[
     {id:'wide_bow',name:'Wide Bow',icon:'🏹',desc:'Fires twice as fast, no spread shots.',stats:[{t:'Fire rate ×2',g:true},{t:'No triple shot',g:false}],fireRateMult:2,tripleShot:false,spreadAngles:[]},
-    {id:'dark_bow',name:'Dark Bow',icon:'🪃',desc:'5-arrow spread salvo every 3rd shot.',stats:[{t:'5 arrows per salvo',g:true}],fireRateMult:1,tripleShot:true,spreadAngles:[-0.42,-0.21,0.21,0.42]},
+    {id:'dark_bow',name:'Dark Bow',icon:'☄',desc:'5-arrow spread salvo every 3rd shot.',stats:[{t:'5 arrows per salvo',g:true}],fireRateMult:1,tripleShot:true,spreadAngles:[-0.42,-0.21,0.21,0.42]},
     {id:'nature_bow',name:'Nature Bow',icon:'🌿',desc:'25% crit chance (+2 dmg). Spread every 3rd shot.',stats:[{t:'25% crit (+2 dmg)',g:true}],fireRateMult:1,tripleShot:true,spreadAngles:[],critChance:0.25},
   ],
   shield:[
