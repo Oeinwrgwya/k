@@ -5,7 +5,6 @@ function draw(){
   for(let x=0;x<=W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
   for(let y=0;y<=H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
   ctx.strokeStyle='rgba(55,55,90,.9)';ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);
-
   arrows.forEach(a=>{
     const ang=Math.atan2(a.vy,a.vx),col=a.owner==='player'?'#4cc9f0':'#e63946';
     ctx.save();ctx.translate(a.x,a.y);ctx.rotate(ang);
