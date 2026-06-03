@@ -19,7 +19,6 @@ function shootSingle(from,to,owner){
   const dx=to.x-from.x,dy=to.y-from.y,d=Math.sqrt(dx*dx+dy*dy)||1;
   arrows.push({x:from.x+(dx/d)*(from.r+10),y:from.y+(dy/d)*(from.r+10),vx:(dx/d)*320,vy:(dy/d)*320,owner,life:5,homing:false});
 }
-
 function shootSpread(from,to,owner,extra){
   const dx=to.x-from.x,dy=to.y-from.y,base=Math.atan2(dy,dx);
   arrows.push({x:from.x+Math.cos(base)*(from.r+10),y:from.y+Math.sin(base)*(from.r+10),vx:Math.cos(base)*320,vy:Math.sin(base)*320,owner,life:5,homing:false});
