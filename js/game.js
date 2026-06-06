@@ -239,16 +239,9 @@ function applyUpgrade(){
 }
 
 function showHub(){
-  const dots=document.getElementById('round-dots');
-  dots.innerHTML='';
-  for(let i=0;i<5;i++){
-    const d=document.createElement('div');
-    d.className='round-dot'+(i<roundCount?' done':i===roundCount?' active':'');
-    dots.appendChild(d);
-  }
-  const titles={1:'After Battle 1',2:'After Battle 2',3:'After Battle 3',4:'After Battle 4'};
-  document.getElementById('hub-title').textContent=titles[roundCount]||'Keep Going';
-  document.getElementById('hub-sub').textContent='Next enemy is at your level';
+  document.getElementById('round-dots').innerHTML='';
+  document.getElementById('hub-title').textContent='Round '+(roundCount+1);
+  document.getElementById('hub-sub').textContent='';
 
   const stats=document.getElementById('hub-stats');
   stats.innerHTML='';
@@ -259,8 +252,10 @@ function showHub(){
   if(playerR2){const u=(UPGRADES_R2[playerWeapon]||[]).find(u=>u.id===playerR2);if(u)pill(u.icon+' '+u.name,true);}
   if(playerR3){const u=UPGRADES_R3.find(u=>u.id===playerR3);if(u)pill(u.icon+' '+u.name,true);}
 
-  const cv=document.getElementById('preview-canvas');
-  drawBallPreview(cv,nextEnemyWeapon,nextEnemyR1,'#e63946');
+  // hide enemy preview element
+  const prev=document.getElementById('hub-enemy-preview');
+  if(prev)prev.style.display='none';
+
   showScreen('hub-screen');
 }
 
