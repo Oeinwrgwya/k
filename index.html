@@ -53,7 +53,7 @@
   .btn-upgrade{font-size:14px;letter-spacing:3px;padding:12px 52px;background:var(--gold);border:none;border-radius:7px;color:#1a0f00;cursor:pointer;font-weight:600;transition:opacity .2s,transform .15s;opacity:0;pointer-events:none;text-transform:uppercase;}
   .btn-upgrade.active{opacity:1;pointer-events:all;}
   .btn-upgrade:hover{transform:scale(1.04);}
-  #hub-screen{flex-direction:column;gap:24px;align-items:center;position:relative;}
+  #hub-screen{flex-direction:column;gap:14px;align-items:center;position:relative;}
   .hub-title{font-size:22px;font-weight:700;letter-spacing:3px;color:var(--gold);text-transform:uppercase;}
   .hub-sub{font-size:12px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-top:-14px;}
   .round-dots{display:flex;gap:8px;align-items:center;}
@@ -118,7 +118,6 @@
   <div class="round-dots" id="round-dots"></div>
   <div class="hub-stats" id="hub-stats"></div>
   <button class="btn-next-fight" onclick="launchNextFight()">Fight</button>
-  <button class="btn-menu-hub" onclick="goMenu()">Main Menu</button>
   <div id="hub-enemy-preview" onclick="launchNextFight()">
     <canvas id="preview-canvas" width="90" height="90"></canvas>
     <div class="hub-preview-label">Next Enemy ▶</div>
