@@ -242,17 +242,8 @@ function showHub(){
   document.getElementById('round-dots').innerHTML='';
   document.getElementById('hub-title').textContent='Round '+(roundCount+1);
   document.getElementById('hub-sub').textContent='';
+  document.getElementById('hub-stats').innerHTML='';
 
-  const stats=document.getElementById('hub-stats');
-  stats.innerHTML='';
-  const wIcon={sword:'⚔️',bow:'🏹',shield:'🛡️'};
-  function pill(text,hi){const s=document.createElement('div');s.className='hub-stat-pill'+(hi?' highlight':'');s.textContent=text;stats.appendChild(s);}
-  pill(wIcon[playerWeapon]+' '+playerWeapon.charAt(0).toUpperCase()+playerWeapon.slice(1),true);
-  if(playerR1){const u=(UPGRADES_R1[playerWeapon]||[]).find(u=>u.id===playerR1);if(u)pill(u.icon+' '+u.name,true);}
-  if(playerR2){const u=(UPGRADES_R2[playerWeapon]||[]).find(u=>u.id===playerR2);if(u)pill(u.icon+' '+u.name,true);}
-  if(playerR3){const u=UPGRADES_R3.find(u=>u.id===playerR3);if(u)pill(u.icon+' '+u.name,true);}
-
-  // hide enemy preview element
   const prev=document.getElementById('hub-enemy-preview');
   if(prev)prev.style.display='none';
 
