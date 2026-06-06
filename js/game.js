@@ -1,9 +1,9 @@
 // ── State ──
 let playerWeapon=null;
-let playerR1=null,playerR3=null;
-let enemyWeapon=null,enemyR1=null,enemyR3=null;
+let playerR1=null,playerR2=null,playerR3=null;
+let enemyWeapon=null,enemyR1=null,enemyR2=null,enemyR3=null;
 let roundCount=0;
-let nextEnemyWeapon=null,nextEnemyR1=null,nextEnemyR3=null;
+let nextEnemyWeapon=null,nextEnemyR1=null,nextEnemyR2=null,nextEnemyR3=null;
 let selectedUpgradeId=null,currentUpgradeRound=0;
 let gameRunning=false,animFrame=null,lastTime=0,gameEnded=false;
 let player,enemy,arrows,arrowTimers,lastHit,particles;
@@ -22,26 +22,51 @@ function pickRandWeapon(exclude){
   const pool=ALL_WEAPONS.filter(w=>w!==exclude);
   return pool[Math.floor(Math.random()*pool.length)];
 }
-function getPlayerMaxHP(){let h=MAX_HP[playerWeapon]||8;if(playerR3==='r3_hp')h+=5;return h;}
-function getEnemyMaxHP(){let h=MAX_HP[enemyWeapon]||8;if(enemyR3==='r3_hp')h+=5;return h;}
+function getPlayerMaxHP(){
+  let h=MAX_HP[playerWeapon]||8;
+  if(playerR2==='extra_hp')h+=5;
+  if(playerR3==='r3_hp')h+=5;
+  return h;
+}
+function getEnemyMaxHP(){
+  let h=MAX_HP[enemyWeapon]||8;
+  if(enemyR2==='extra_hp')h+=5;
+  if(enemyR3==='r3_hp')h+=5;
+  return h;
+}
 
 function prepareNextEnemy(){
   nextEnemyWeapon=pickRandWeapon(playerWeapon);
-  if(playerR1){const pool=UPGRADES_R1[nextEnemyWeapon]||[];nextEnemyR1=pool.length?pool[Math.floor(Math.random()*pool.length)].id:null;}
-  else nextEnemyR1=null;
-  if(playerR3){nextEnemyR3=UPGRADES_R3[Math.floor(Math.random()*UPGRADES_R3.length)].id;}
-  else nextEnemyR3=null;
+  // R1: weapon upgrade
+  if(playerR1){
+    const pool=UPGRADES_R1[nextEnemyWeapon]||[];
+    nextEnemyR1=pool.length?pool[Math.floor(Math.random()*pool.length)].id:null;
+  } else nextEnemyR1=null;
+  // R2: weapon passive
+  if(playerR2){
+    const pool=UPGRADES_R2[nextEnemyWeapon]||[];
+    nextEnemyR2=pool.length?pool[Math.floor(Math.random()*pool.length)].id:null;
+  } else nextEnemyR2=null;
+  // R3: universal stat
+  if(playerR3){
+    nextEnemyR3=UPGRADES_R3[Math.floor(Math.random()*UPGRADES_R3.length)].id;
+  } else nextEnemyR3=null;
 }
 
 function startRun(){
-  roundCount=0;playerR1=playerR3=null;
-  enemyWeapon=enemyR1=enemyR3=null;
-  nextEnemyWeapon=nextEnemyR1=nextEnemyR3=null;
-  prepareNextEnemy();launchNextFight();
+  roundCount=0;
+  playerR1=playerR2=playerR3=null;
+  enemyWeapon=enemyR1=enemyR2=enemyR3=null;
+  nextEnemyWeapon=nextEnemyR1=nextEnemyR2=nextEnemyR3=null;
+  prepareNextEnemy();
+  launchNextFight();
 }
 
 function launchNextFight(){
-  enemyWeapon=nextEnemyWeapon;enemyR1=nextEnemyR1;enemyR3=nextEnemyR3;
+  enemyWeapon=nextEnemyWeapon;
+  enemyR1=nextEnemyR1;
+  enemyR2=nextEnemyR2;
+  enemyR3=nextEnemyR3;
   startBattle();
 }
 
@@ -50,8 +75,10 @@ function startBattle(){
   const spd=150;
   function rv(){const a=Math.random()*Math.PI*2;return{vx:Math.cos(a)*spd,vy:Math.sin(a)*spd};}
   const pv=rv(),ev=rv();
-  player={x:130,y:H/2,vx:pv.vx,vy:pv.vy,r:R,weapon:playerWeapon,color:'#4cc9f0',alive:true,hp:getPlayerMaxHP(),aimAngle:0,sword:makeSword(),shield:{timer:0,blocking:false,blockTimer:0}};
-  enemy={x:W-130,y:H/2,vx:ev.vx,vy:ev.vy,r:R,weapon:enemyWeapon,color:'#e63946',alive:true,hp:getEnemyMaxHP(),aimAngle:Math.PI,sword:makeSword(),shield:{timer:0,blocking:false,blockTimer:0}};
+  player={x:130,y:H/2,vx:pv.vx,vy:pv.vy,r:R,weapon:playerWeapon,color:'#4cc9f0',alive:true,
+          hp:getPlayerMaxHP(),aimAngle:0,sword:makeSword(),shield:{timer:0,blocking:false,blockTimer:0}};
+  enemy={x:W-130,y:H/2,vx:ev.vx,vy:ev.vy,r:R,weapon:enemyWeapon,color:'#e63946',alive:true,
+         hp:getEnemyMaxHP(),aimAngle:Math.PI,sword:makeSword(),shield:{timer:0,blocking:false,blockTimer:0}};
   arrows=[];particles=[];
   arrowTimers={player:0,enemy:0,playerShot:0,enemyShot:0};
   lastHit={player:-999,enemy:-999};
@@ -127,6 +154,8 @@ function update(dt){
       let dmg=1,isCrit=false;
       const r1b=getR1('bow',isP?playerR1:enemyR1);
       if(r1b&&r1b.critChance&&Math.random()<r1b.critChance){dmg+=2;isCrit=true;}
+      const r2b=getR2('bow',isP?playerR2:enemyR2);
+      if(r2b&&r2b.id==='homing_crit'&&Math.random()<0.15){dmg+=2;isCrit=true;}
       const r3=getR3(isP?playerR3:enemyR3);
       if(r3&&r3.id==='r3_crit'&&Math.random()<0.15){dmg+=2;isCrit=true;}
       if(r3&&r3.id==='r3_dmg')dmg+=1;
@@ -137,6 +166,12 @@ function update(dt){
   }
 }
 
+// ── END GAME ──
+// Round flow:
+// Battle 1 done → R1 upgrade (weapon path)
+// Battle 2 done → R2 upgrade (weapon passive)
+// Battle 3 done → R3 upgrade (universal stat: +1dmg / +5hp / 15%crit)
+// Battle 4+ done → hub only
 function endGame(result){
   if(!gameRunning||gameEnded)return;
   gameEnded=true;gameRunning=false;clearInterval(animFrame);animFrame=null;
@@ -151,22 +186,32 @@ function endGame(result){
     let btn='Continue';
     if(roundCount===1)btn='Choose Upgrade';
     else if(roundCount===2)btn='Choose Passive';
+    else if(roundCount===3)btn='Choose Stat';
     document.getElementById('btn-continue').textContent=btn;
     showScreen('result-screen');
   },500);
 }
 
 function afterBattle(){
-  if(roundCount===1)showUpgradeScreen(1);
-  else if(roundCount===2)showUpgradeScreen(3);
-  else{prepareNextEnemy();showHub();}
+  if(roundCount===1)      showUpgradeScreen('r1');  // weapon path
+  else if(roundCount===2) showUpgradeScreen('r2');  // weapon passive
+  else if(roundCount===3) showUpgradeScreen('r3');  // universal stat
+  else { prepareNextEnemy(); showHub(); }
 }
 
 function showUpgradeScreen(rnd){
   currentUpgradeRound=rnd;selectedUpgradeId=null;
   let pool,title,sub;
-  if(rnd===1){pool=UPGRADES_R1[playerWeapon]||[];title='Weapon Upgrade';sub='Choose your path';}
-  else{pool=UPGRADES_R3;title='Passive Upgrade';sub='Choose a universal passive';}
+  if(rnd==='r1'){
+    pool=UPGRADES_R1[playerWeapon]||[];
+    title='Weapon Upgrade';sub='Choose your path';
+  } else if(rnd==='r2'){
+    pool=UPGRADES_R2[playerWeapon]||[];
+    title='Weapon Passive';sub='Enhance your fighting style';
+  } else {
+    pool=UPGRADES_R3;
+    title='Stat Upgrade';sub='Choose a universal stat';
+  }
   document.getElementById('upg-title').textContent=title;
   document.getElementById('upg-sub').textContent=sub;
   document.getElementById('btn-upgrade').classList.remove('active');
@@ -186,29 +231,34 @@ function selectUpgrade(id){
 
 function applyUpgrade(){
   if(!selectedUpgradeId)return;
-  if(currentUpgradeRound===1)playerR1=selectedUpgradeId;
-  else playerR3=selectedUpgradeId;
-  prepareNextEnemy();showHub();
+  if(currentUpgradeRound==='r1')      playerR1=selectedUpgradeId;
+  else if(currentUpgradeRound==='r2') playerR2=selectedUpgradeId;
+  else                                playerR3=selectedUpgradeId;
+  prepareNextEnemy();
+  showHub();
 }
 
 function showHub(){
   const dots=document.getElementById('round-dots');
   dots.innerHTML='';
-  for(let i=0;i<4;i++){
+  for(let i=0;i<5;i++){
     const d=document.createElement('div');
     d.className='round-dot'+(i<roundCount?' done':i===roundCount?' active':'');
     dots.appendChild(d);
   }
-  const titles=['','After Battle 1','After Battle 2','After Battle 3','Keep Going'];
-  document.getElementById('hub-title').textContent=titles[Math.min(roundCount,4)]||'Keep Going';
+  const titles={1:'After Battle 1',2:'After Battle 2',3:'After Battle 3',4:'After Battle 4'};
+  document.getElementById('hub-title').textContent=titles[roundCount]||'Keep Going';
   document.getElementById('hub-sub').textContent='Next enemy is at your level';
+
   const stats=document.getElementById('hub-stats');
   stats.innerHTML='';
   const wIcon={sword:'⚔️',bow:'🏹',shield:'🛡️'};
   function pill(text,hi){const s=document.createElement('div');s.className='hub-stat-pill'+(hi?' highlight':'');s.textContent=text;stats.appendChild(s);}
   pill(wIcon[playerWeapon]+' '+playerWeapon.charAt(0).toUpperCase()+playerWeapon.slice(1),true);
   if(playerR1){const u=(UPGRADES_R1[playerWeapon]||[]).find(u=>u.id===playerR1);if(u)pill(u.icon+' '+u.name,true);}
+  if(playerR2){const u=(UPGRADES_R2[playerWeapon]||[]).find(u=>u.id===playerR2);if(u)pill(u.icon+' '+u.name,true);}
   if(playerR3){const u=UPGRADES_R3.find(u=>u.id===playerR3);if(u)pill(u.icon+' '+u.name,true);}
+
   const cv=document.getElementById('preview-canvas');
   drawBallPreview(cv,nextEnemyWeapon,nextEnemyR1,'#e63946');
   showScreen('hub-screen');
@@ -217,8 +267,8 @@ function showHub(){
 function goMenu(){
   clearInterval(animFrame);animFrame=null;
   playerWeapon=enemyWeapon=null;
-  playerR1=playerR3=enemyR1=enemyR3=null;
-  nextEnemyWeapon=nextEnemyR1=nextEnemyR3=null;
+  playerR1=playerR2=playerR3=enemyR1=enemyR2=enemyR3=null;
+  nextEnemyWeapon=nextEnemyR1=nextEnemyR2=nextEnemyR3=null;
   roundCount=0;
   document.querySelectorAll('.weapon-card').forEach(c=>c.classList.remove('selected'));
   document.getElementById('btn-fight').classList.remove('visible');
