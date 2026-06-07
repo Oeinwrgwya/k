@@ -76,7 +76,7 @@
   .result-title.lose{color:var(--red);}
   .result-title.draw{color:var(--blue);}
   .result-sub{color:var(--dim);font-size:13px;letter-spacing:2px;text-transform:uppercase;}
-  .btn-continue{font-size:13px;letter-spacing:2px;padding:11px 44px;background:transparent;border:2px solid var(--gold);border-radius:7px;color:var(--gold);cursor:pointer;transition:background .15s;text-transform:uppercase;}
+  .btn-continue{font-size:13px;letter-spacing:2px;padding:11px 28px;background:transparent;border:2px solid var(--gold);border-radius:7px;color:var(--gold);cursor:pointer;transition:background .15s;text-transform:uppercase;width:auto;display:inline-block;}
   .btn-continue:hover{background:rgba(201,162,39,.1);}
   .btn-menu-r{font-size:12px;letter-spacing:1px;padding:8px 32px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;transition:border-color .15s,color .15s;}
   .btn-menu-r:hover{border-color:var(--dim);color:var(--text);}
@@ -125,10 +125,8 @@
 </div>
 
 <div class="screen hidden" id="result-screen">
-  <div class="result-title" id="result-title">Victory!</div>
-  <div class="result-sub" id="result-sub">Enemy defeated</div>
-  <button class="btn-continue" id="btn-continue" onclick="afterBattle()">Continue</button>
-  <button class="btn-menu-r" onclick="goMenu()">Main Menu</button>
+  <div class="result-title" id="result-title">Victory</div>
+  <button class="btn-continue" id="btn-continue" onclick="afterBattle()">Next</button>
 </div>
 
 <script src="js/constants.js"></script>
