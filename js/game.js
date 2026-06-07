@@ -77,8 +77,11 @@ function startBattle(){
   const pv=rv(),ev=rv();
   player={x:130,y:H/2,vx:pv.vx,vy:pv.vy,r:R,weapon:playerWeapon,color:'#4cc9f0',alive:true,
           hp:getPlayerMaxHP(),aimAngle:0,sword:makeSword(),shield:{timer:0,blocking:false,blockTimer:0}};
-  enemy={x:W-130,y:H/2,vx:ev.vx,vy:ev.vy,r:R,weapon:enemyWeapon,color:'#e63946',alive:true,
+  enemy={x:W-130,y:H/2,vx:ev.vx,vy:ev.vy,r:R,weapon:enemyWeapon||'sword',color:'#e63946',alive:true,
          hp:getEnemyMaxHP(),aimAngle:Math.PI,sword:makeSword(),shield:{timer:0,blocking:false,blockTimer:0}};
+  // safety check
+  if(!player.hp||player.hp<=0)player.hp=MAX_HP[playerWeapon]||8;
+  if(!enemy.hp||enemy.hp<=0)enemy.hp=MAX_HP[enemyWeapon]||8;
   arrows=[];particles=[];
   arrowTimers={player:0,enemy:0,playerShot:0,enemyShot:0};
   lastHit={player:-999,enemy:-999};
@@ -177,26 +180,22 @@ function endGame(result){
   gameEnded=true;gameRunning=false;clearInterval(animFrame);animFrame=null;
   roundCount++;
   setTimeout(()=>{
-    const t=result==='win'?'Victory!':result==='lose'?'Defeat':'Draw';
-    const s=result==='win'?'Enemy defeated':result==='lose'?'You fell':'Both fell';
+    const t=result==='win'?'Victory':result==='lose'?'Defeat':'Draw';
+    const s='';
     const c=result==='win'?'win':result==='lose'?'lose':'draw';
     document.getElementById('result-title').textContent=t;
     document.getElementById('result-title').className='result-title '+c;
-    document.getElementById('result-sub').textContent=s;
-    let btn='Continue';
-    if(roundCount===1)btn='Choose Upgrade';
-    else if(roundCount===2)btn='Choose Passive';
-    else if(roundCount===3)btn='Choose Stat';
-    document.getElementById('btn-continue').textContent=btn;
+    document.getElementById('btn-continue').textContent='Next';
     showScreen('result-screen');
   },500);
 }
 
 function afterBattle(){
-  if(roundCount===1)      showUpgradeScreen('r1');  // weapon path
-  else if(roundCount===2) showUpgradeScreen('r2');  // weapon passive
-  else if(roundCount===3) showUpgradeScreen('r3');  // universal stat
-  else { prepareNextEnemy(); showHub(); }
+  prepareNextEnemy(); // always prepare before showing any screen
+  if(roundCount===1)      showUpgradeScreen('r1');
+  else if(roundCount===2) showUpgradeScreen('r2');
+  else if(roundCount===3) showUpgradeScreen('r3');
+  else                    showHub();
 }
 
 function showUpgradeScreen(rnd){
