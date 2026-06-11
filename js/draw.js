@@ -1,6 +1,6 @@
 function draw(){
   const cv=document.getElementById('arena-canvas'),ctx=cv.getContext('2d');
-  ctx.fillStyle='#0d0d16';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#070709';ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='rgba(36,36,62,.8)';ctx.lineWidth=1;
   for(let x=0;x<=W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
   for(let y=0;y<=H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
