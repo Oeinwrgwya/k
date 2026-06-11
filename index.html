@@ -80,34 +80,6 @@
   .btn-continue:hover{background:rgba(201,162,39,.1);}
   .btn-menu-r{font-size:12px;letter-spacing:1px;padding:8px 32px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;transition:border-color .15s,color .15s;}
   .btn-menu-r:hover{border-color:var(--dim);color:var(--text);}
-  .btn-shop{font-size:20px;width:44px;height:44px;background:transparent;border:2px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color .15s,background .15s;display:flex;align-items:center;justify-content:center;}
-  .btn-shop:hover{border-color:var(--gold);background:rgba(201,162,39,.08);}
-
-  /* SHOP SCREEN */
-  #shop-screen{flex-direction:row;gap:28px;align-items:flex-start;justify-content:center;padding:40px 20px;}
-  .shop-left{display:flex;flex-direction:column;align-items:center;gap:12px;min-width:140px;}
-  .shop-ball-wrap{width:100px;height:100px;background:var(--panel);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;}
-  .shop-gold-display{font-size:16px;color:var(--gold);letter-spacing:2px;}
-  .inv-grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:140px;}
-  .inv-slot{width:44px;height:44px;background:var(--panel);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;}
-  .inv-slot.empty{color:var(--dim);font-size:14px;}
-  .stats-box{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;width:140px;}
-  .stat-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border);color:var(--dim);}
-  .stat-row:last-child{border-bottom:none;}
-  .stat-row span{color:var(--text);}
-  .shop-right{display:flex;flex-direction:column;gap:10px;min-width:180px;}
-  .shop-section-label{font-size:11px;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:2px;}
-  .shop-grid{display:flex;flex-direction:column;gap:8px;}
-  .shop-slot{background:var(--panel);border:2px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;transition:border-color .15s,background .15s;position:relative;}
-  .shop-slot:not(.owned):not(.cant-afford):hover{border-color:var(--gold);background:#1b1708;cursor:pointer;}
-  .shop-slot.owned{border-color:#2a4a2a;opacity:.7;}
-  .shop-slot.cant-afford{opacity:.4;}
-  .shop-slot-icon{font-size:26px;line-height:1;}
-  .shop-slot-name{font-size:13px;font-weight:600;color:var(--text);}
-  .shop-slot-desc{font-size:11px;color:var(--dim);margin-top:2px;}
-  .shop-slot-cost{position:absolute;bottom:8px;right:10px;font-size:11px;color:var(--gold);font-weight:700;}
-  .btn-shop-close{font-size:12px;letter-spacing:2px;padding:9px 28px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;transition:border-color .15s,color .15s;text-transform:uppercase;align-self:flex-end;margin-top:4px;}
-  .btn-shop-close:hover{border-color:var(--dim);color:var(--text);}
 </style>
 </head>
 <body>
@@ -154,33 +126,7 @@
 
 <div class="screen hidden" id="result-screen">
   <div class="result-title" id="result-title">Victory</div>
-  <div id="result-gold" style="font-size:18px;letter-spacing:2px;color:var(--gold);margin-top:-8px;">🪙 +3</div>
-  <div style="display:flex;gap:12px;align-items:center;margin-top:4px;">
-    <button class="btn-continue" id="btn-continue" onclick="afterBattle()">Next</button>
-    <button class="btn-shop" onclick="openShop()">⚙️</button>
-  </div>
-</div>
-
-<!-- SHOP -->
-<div class="screen hidden" id="shop-screen">
-  <div class="shop-left">
-    <div class="shop-ball-wrap">
-      <canvas id="shop-ball-canvas" width="90" height="90"></canvas>
-    </div>
-    <div class="shop-gold-display" id="shop-gold">🪙 0</div>
-    <div class="inv-grid" id="inv-grid"></div>
-    <div class="stats-box">
-      <div class="stat-row">HP <span id="stat-hp">8</span></div>
-      <div class="stat-row">Damage <span id="stat-dmg">1</span></div>
-      <div class="stat-row">Crit <span id="stat-crit">0%</span></div>
-      <div class="stat-row">Atk Speed <span id="stat-atk">1.00×</span></div>
-    </div>
-  </div>
-  <div class="shop-right">
-    <div class="shop-section-label">Shop</div>
-    <div class="shop-grid" id="shop-grid"></div>
-    <button class="btn-shop-close" onclick="showScreen('result-screen')">Close</button>
-  </div>
+  <button class="btn-continue" id="btn-continue" onclick="afterBattle()">Next</button>
 </div>
 
 <script src="js/constants.js"></script>
@@ -188,7 +134,6 @@
 <script src="js/physics.js"></script>
 <script src="js/weapons.js"></script>
 <script src="js/draw.js"></script>
-<script src="js/shop.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>
