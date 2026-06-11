@@ -23,15 +23,15 @@ function pickRandWeapon(exclude){
   return pool[Math.floor(Math.random()*pool.length)];
 }
 function getPlayerMaxHP(){
-  let h=MAX_HP[playerWeapon]||8;
-  if(playerR2==='extra_hp')h+=5;
-  if(playerR3==='r3_hp')h+=5;
+  let h=MAX_HP[playerWeapon]||80;
+  if(playerR2==='extra_hp')h+=50;
+  if(playerR3==='r3_hp')h+=50;
   return h;
 }
 function getEnemyMaxHP(){
-  let h=MAX_HP[enemyWeapon]||8;
-  if(enemyR2==='extra_hp')h+=5;
-  if(enemyR3==='r3_hp')h+=5;
+  let h=MAX_HP[enemyWeapon]||80;
+  if(enemyR2==='extra_hp')h+=50;
+  if(enemyR3==='r3_hp')h+=50;
   return h;
 }
 
@@ -80,8 +80,8 @@ function startBattle(){
   enemy={x:W-130,y:H/2,vx:ev.vx,vy:ev.vy,r:R,weapon:enemyWeapon||'sword',color:'#e63946',alive:true,
          hp:getEnemyMaxHP(),aimAngle:Math.PI,sword:makeSword(),shield:{timer:0,blocking:false,blockTimer:0}};
   // safety check
-  if(!player.hp||player.hp<=0)player.hp=MAX_HP[playerWeapon]||8;
-  if(!enemy.hp||enemy.hp<=0)enemy.hp=MAX_HP[enemyWeapon]||8;
+  if(!player.hp||player.hp<=0)player.hp=MAX_HP[playerWeapon]||80;
+  if(!enemy.hp||enemy.hp<=0)enemy.hp=MAX_HP[enemyWeapon]||80;
   arrows=[];particles=[];
   arrowTimers={player:0,enemy:0,playerShot:0,enemyShot:0};
   lastHit={player:-999,enemy:-999};
@@ -158,14 +158,14 @@ function update(dt){
       const sp=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
       tgt.vx=(a.vx/sp)*PUSH_SCALE*0.5;tgt.vy=(a.vy/sp)*PUSH_SCALE*0.5;
       const isP=a.owner==='player';
-      let dmg=1,isCrit=false;
+      let dmg=10,isCrit=false;
       const r1b=getR1('bow',isP?playerR1:enemyR1);
-      if(r1b&&r1b.critChance&&Math.random()<r1b.critChance){dmg+=2;isCrit=true;}
+      if(r1b&&r1b.critChance&&Math.random()<r1b.critChance){dmg+=20;isCrit=true;}
       const r2b=getR2('bow',isP?playerR2:enemyR2);
-      if(r2b&&r2b.id==='homing_crit'&&Math.random()<0.15){dmg+=2;isCrit=true;}
+      if(r2b&&r2b.id==='homing_crit'&&Math.random()<0.15){dmg+=20;isCrit=true;}
       const r3=getR3(isP?playerR3:enemyR3);
-      if(r3&&r3.id==='r3_crit'&&Math.random()<0.15){dmg+=2;isCrit=true;}
-      if(r3&&r3.id==='r3_dmg')dmg+=1;
+      if(r3&&r3.id==='r3_crit'&&Math.random()<0.15){dmg+=20;isCrit=true;}
+      if(r3&&r3.id==='r3_dmg')dmg+=10;
       arrows.splice(i,1);
       if(isCrit)spawnCrit(tgt.x,tgt.y,isP?'#a0ff60':'#ffcc00');
       damage(tgt,dmg);
@@ -177,7 +177,7 @@ function update(dt){
 // Round flow:
 // Battle 1 done → R1 upgrade (weapon path)
 // Battle 2 done → R2 upgrade (weapon passive)
-// Battle 3 done → R3 upgrade (universal stat: +1dmg / +5hp / 15%crit)
+// Battle 3 done → R3 upgrade (universal stat: +10dmg / +50hp / 15%crit)
 // Battle 4+ done → hub only
 function endGame(result){
   if(!gameRunning||gameEnded)return;
@@ -220,7 +220,7 @@ function showUpgradeScreen(rnd){
   document.getElementById('btn-upgrade').classList.remove('active');
   document.getElementById('upgrade-grid').innerHTML=pool.map(u=>{
     const stats=(u.stats||[]).map(s=>`<span class="stat-pill ${s.g?'stat-good':'stat-bad'}">${s.t}</span>`).join('');
-    return `<div class="upgrade-card" id="upg-${u.id}" onclick="selectUpgrade('${u.id}')"><div class="upgrade-badge">✓</div><span class="upgrade-icon">${u.icon}</span><div class="upgrade-name">${u.n}</div><div class="upgrade-desc">${u.d}</div><div class="upgrade-stats">${stats}</div></div>`;
+    return `<div class="upgrade-card" id="upg-${u.id}" onclick="selectUpgrade('${u.id}')"><div class="upgrade-badge">✓</div><span class="upgrade-icon">${u.icon}</span><div class="upgrade-name">${u.name}</div><div class="upgrade-desc">${u.desc}</div>${stats}</div>`;
   }).join('');
   showScreen('upgrade-screen');
 }

@@ -63,9 +63,9 @@ function updateSword(att,tgt,dt,isP){
 function checkSwordBlade(att,tgt,angle,sw,isP,sLen){
   const r1=getR1('sword',isP?playerR1:enemyR1);
   const r3=getR3(isP?playerR3:enemyR3);
-  let dmg=r1?r1.damageMult:1,isCrit=false;
-  if(r3&&r3.id==='r3_crit'&&Math.random()<0.15){dmg+=2;isCrit=true;}
-  if(r3&&r3.id==='r3_dmg')dmg+=1;
+  let dmg=r1?r1.damageMult:10,isCrit=false;
+  if(r3&&r3.id==='r3_crit'&&Math.random()<0.15){dmg+=20;isCrit=true;}
+  if(r3&&r3.id==='r3_dmg')dmg+=10;
   const isWide=r1&&r1.id==='wide',bladeW=isWide?9:SWORD_W;
   const s0=att.r,s1=att.r+(sLen||SWORD_LEN);
   if(tgt.weapon==='shield'&&tgt.shield.blocking){
@@ -100,6 +100,6 @@ function updateShield(b,dt,isP){
   else{sh.timer+=dt;if(sh.timer>=cycle){sh.blocking=true;sh.blockTimer=SHIELD_DURATION;sh.timer=0;}}
   if(isSpike){
     const tgt=b===player?enemy:player;
-    if(Math.sqrt((tgt.x-b.x)**2+(tgt.y-b.y)**2)<b.r+tgt.r+8)damage(tgt,1);
+    if(Math.sqrt((tgt.x-b.x)**2+(tgt.y-b.y)**2)<b.r+tgt.r+8)damage(tgt,10);
   }
 }
