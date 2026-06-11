@@ -92,8 +92,12 @@ function startBattle(){
 }
 
 function updateHPBars(){
-  document.getElementById('hp-bar-player').style.width=(player.hp/getPlayerMaxHP()*100)+'%';
-  document.getElementById('hp-bar-enemy').style.width=(enemy.hp/getEnemyMaxHP()*100)+'%';
+  const playerMaxHP=getPlayerMaxHP();
+  const enemyMaxHP=getEnemyMaxHP();
+  document.getElementById('hp-bar-player').style.width=(player.hp/playerMaxHP*100)+'%';
+  document.getElementById('hp-bar-enemy').style.width=(enemy.hp/enemyMaxHP*100)+'%';
+  document.getElementById('hp-text-player').textContent=player.hp+'/'+playerMaxHP;
+  document.getElementById('hp-text-enemy').textContent=enemy.hp+'/'+enemyMaxHP;
 }
 
 function loop(){
@@ -216,7 +220,7 @@ function showUpgradeScreen(rnd){
   document.getElementById('btn-upgrade').classList.remove('active');
   document.getElementById('upgrade-grid').innerHTML=pool.map(u=>{
     const stats=(u.stats||[]).map(s=>`<span class="stat-pill ${s.g?'stat-good':'stat-bad'}">${s.t}</span>`).join('');
-    return `<div class="upgrade-card" id="upg-${u.id}" onclick="selectUpgrade('${u.id}')"><div class="upgrade-badge">✓</div><span class="upgrade-icon">${u.icon}</span><div class="upgrade-name">${u.name}</div><div class="upgrade-desc">${u.desc}</div><div class="upgrade-stats">${stats}</div></div>`;
+    return `<div class="upgrade-card" id="upg-${u.id}" onclick="selectUpgrade('${u.id}')"><div class="upgrade-badge">✓</div><span class="upgrade-icon">${u.icon}</span><div class="upgrade-name">${u.n}</div><div class="upgrade-desc">${u.d}</div><div class="upgrade-stats">${stats}</div></div>`;
   }).join('');
   showScreen('upgrade-screen');
 }
