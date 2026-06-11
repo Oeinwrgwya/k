@@ -123,7 +123,7 @@ function update(dt){
   for(let i=arrows.length-1;i>=0;i--){
     const a=arrows[i];
     a.x+=a.vx*dt;a.y+=a.vy*dt;a.life-=dt;
-    if(a.homing){
+  if(a.homing && a.life > 4.7){
       const ht=a.owner==='player'?enemy:player;
       const hx=ht.x-a.x,hy=ht.y-a.y,hd=Math.sqrt(hx*hx+hy*hy)||1;
       a.vx+=(hx/hd)*600*dt;a.vy+=(hy/hd)*600*dt;
