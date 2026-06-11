@@ -58,7 +58,6 @@ function startRun(){
   playerR1=playerR2=playerR3=null;
   enemyWeapon=enemyR1=enemyR2=enemyR3=null;
   nextEnemyWeapon=nextEnemyR1=nextEnemyR2=nextEnemyR3=null;
-  gold=0; inventory=[];
   prepareNextEnemy();
   launchNextFight();
 }
@@ -158,8 +157,6 @@ function update(dt){
       let dmg=1,isCrit=false;
       const r1b=getR1('bow',isP?playerR1:enemyR1);
       if(r1b&&r1b.critChance&&Math.random()<r1b.critChance){dmg+=2;isCrit=true;}
-      // item crit bonus (player only)
-      if(isP&&Math.random()<getItemCritChance()){dmg+=2;isCrit=true;}
       const r2b=getR2('bow',isP?playerR2:enemyR2);
       if(r2b&&r2b.id==='homing_crit'&&Math.random()<0.15){dmg+=2;isCrit=true;}
       const r3=getR3(isP?playerR3:enemyR3);
@@ -182,15 +179,12 @@ function endGame(result){
   if(!gameRunning||gameEnded)return;
   gameEnded=true;gameRunning=false;clearInterval(animFrame);animFrame=null;
   roundCount++;
-  // gold reward
-  if(result==='win')       gold+=3;
-  else if(result==='lose') gold+=1;
   setTimeout(()=>{
     const t=result==='win'?'Victory':result==='lose'?'Defeat':'Draw';
+    const s='';
     const c=result==='win'?'win':result==='lose'?'lose':'draw';
     document.getElementById('result-title').textContent=t;
     document.getElementById('result-title').className='result-title '+c;
-    document.getElementById('result-gold').textContent='🪙 +'+(result==='win'?3:1);
     document.getElementById('btn-continue').textContent='Next';
     showScreen('result-screen');
   },500);
