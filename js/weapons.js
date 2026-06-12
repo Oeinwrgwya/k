@@ -6,6 +6,7 @@ function updateBowShoot(from,to,key,dt){
   const homing=r2&&r2.id==='homing';
   let interval=ARROW_INTERVAL;
   if(r1)interval/=(r1.fireRateMult||1);
+  if(r2&&r2.id==='fast_fire')interval/=1.5;
   arrowTimers[key]+=dt;
   if(arrowTimers[key]>=interval){
     arrowTimers[key]=0;
