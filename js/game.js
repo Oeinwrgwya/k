@@ -123,12 +123,12 @@ function update(dt){
   for(let i=arrows.length-1;i>=0;i--){
     const a=arrows[i];
     a.x+=a.vx*dt;a.y+=a.vy*dt;a.life-=dt;
-  if(a.homing && a.life > 4.7){
-      const ht=a.owner==='player'?enemy:player;
-      const hx=ht.x-a.x,hy=ht.y-a.y,hd=Math.sqrt(hx*hx+hy*hy)||1;
-      a.vx+=(hx/hd)*600*dt;a.vy+=(hy/hd)*600*dt;
-      const s2=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
-      if(s2>400){a.vx=a.vx/s2*400;a.vy=a.vy/s2*400;}
+if(a.homing){
+  const ht=a.owner==='player'?enemy:player;
+  const hx=ht.x-a.x,hy=ht.y-a.y,hd=Math.sqrt(hx*hx+hy*hy)||1;
+  a.vx+=(hx/hd)*180*dt; a.vy+=(hy/hd)*180*dt;
+  const s2=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
+  if(s2>360){a.vx=a.vx/s2*360;a.vy=a.vy/s2*360;}
     }
     if(a.x<0||a.x>W||a.y<0||a.y>H||a.life<=0){arrows.splice(i,1);continue;}
     const tgt=a.owner==='player'?enemy:player;
