@@ -95,6 +95,8 @@ function startBattle(){
 function updateHPBars(){
   document.getElementById('hp-bar-player').style.width=(player.hp/getPlayerMaxHP()*100)+'%';
   document.getElementById('hp-bar-enemy').style.width=(enemy.hp/getEnemyMaxHP()*100)+'%';
+  document.getElementById('hp-text-player').textContent=player.hp+'/'+getPlayerMaxHP();
+  document.getElementById('hp-text-enemy').textContent=enemy.hp+'/'+getEnemyMaxHP();
 }
 
 function loop(){
