@@ -29,9 +29,9 @@ function getPlayerMaxHP(){
   return h;
 }
 function getEnemyMaxHP(){
-  let h=MAX_HP[enemyWeapon]||8;
-  if(enemyR2==='extra_hp')h+=5;
-  if(enemyR3==='r3_hp')h+=5;
+  let h=MAX_HP[enemyWeapon]||80;
+  if(enemyR2==='extra_hp')h+=50;
+  if(enemyR3==='r3_hp')h+=50;
   return h;
 }
 
@@ -81,8 +81,8 @@ function startBattle(){
   enemy={x:W-130,y:H/2,vx:ev.vx,vy:ev.vy,r:R,weapon:enemyWeapon||'sword',color:'#e63946',alive:true,
          hp:getEnemyMaxHP(),aimAngle:Math.PI,sword:makeSword(),shield:{timer:0,blocking:false,blockTimer:0}};
   // safety check
-  if(!player.hp||player.hp<=0)player.hp=MAX_HP[playerWeapon]||8;
-  if(!enemy.hp||enemy.hp<=0)enemy.hp=MAX_HP[enemyWeapon]||8;
+  if(!player.hp||player.hp<=0)player.hp=MAX_HP[playerWeapon]||80;
+  if(!enemy.hp||enemy.hp<=0)enemy.hp=MAX_HP[enemyWeapon]||80;
   arrows=[];particles=[];
   arrowTimers={player:0,enemy:0,playerShot:0,enemyShot:0};
   lastHit={player:-999,enemy:-999};
