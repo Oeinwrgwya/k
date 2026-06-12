@@ -157,7 +157,8 @@ function update(dt){
       const r1shooter=getR1('bow',isP?playerR1:enemyR1);
       const knockMult=(r1shooter&&r1shooter.weakKnockback)?0.03:0.5;
       tgt.vx=(a.vx/sp)*PUSH_SCALE*knockMult;tgt.vy=(a.vy/sp)*PUSH_SCALE*knockMult;
-      let dmg=1,isCrit=false;
+      const r2bDmg=getR2('bow',isP?playerR2:enemyR2);
+      let dmg=r2bDmg&&r2bDmg.id==='fast_fire'?6:1,isCrit=false;
       const r1b=getR1('bow',isP?playerR1:enemyR1);
       if(r1b&&r1b.critChance&&Math.random()<r1b.critChance){dmg+=2;isCrit=true;}
       // item crit bonus (player only)
