@@ -3,6 +3,7 @@ function updateBowShoot(from,to,key,dt){
   const isP=key==='player';
   const r1=getR1('bow',isP?playerR1:enemyR1);
   const r2=getR2('bow',isP?playerR2:enemyR2);
+  const homing=r2&&r2.id==='homing';
   let interval=ARROW_INTERVAL;
   if(r1)interval/=(r1.fireRateMult||1);
   arrowTimers[key]+=dt;
@@ -11,23 +12,21 @@ function updateBowShoot(from,to,key,dt){
     const sk=key+'Shot';arrowTimers[sk]=(arrowTimers[sk]||0)+1;
     const doTriple=r1?(r1.id==='dark_bow'||r1.id==='nature_bow'?true:r1.tripleShot):true;
     const extraA=r1?(r1.id==='nature_bow'?[-0.28,0.28]:r1.spreadAngles):[-0.28,0.28];
-    if(doTriple&&arrowTimers[sk]>=3){arrowTimers[sk]=0;shootSpread(from,to,key,extraA,r2);}
-    else shootSingle(from,to,key,r2);
+    if(doTriple&&arrowTimers[sk]>=3){arrowTimers[sk]=0;shootSpread(from,to,key,extraA,homing);}
+    else shootSingle(from,to,key,homing);
   }
 }
 
-function shootSingle(from,to,owner,r2){
+function shootSingle(from,to,owner,homing=false){
   const dx=to.x-from.x,dy=to.y-from.y,d=Math.sqrt(dx*dx+dy*dy)||1;
-  const hasHoming=r2&&r2.id==='homing';
-  arrows.push({x:from.x+(dx/d)*(from.r+10),y:from.y+(dy/d)*(from.r+10),vx:(dx/d)*320,vy:(dy/d)*320,owner,life:5,homing:hasHoming,homingTime:hasHoming?1.0:0});
+  arrows.push({x:from.x+(dx/d)*(from.r+10),y:from.y+(dy/d)*(from.r+10),vx:(dx/d)*320,vy:(dy/d)*320,owner,life:5,homing});
 }
-function shootSpread(from,to,owner,extra,r2){
+function shootSpread(from,to,owner,extra,homing=false){
   const dx=to.x-from.x,dy=to.y-from.y,base=Math.atan2(dy,dx);
-  const hasHoming=r2&&r2.id==='homing';
-  arrows.push({x:from.x+Math.cos(base)*(from.r+10),y:from.y+Math.sin(base)*(from.r+10),vx:Math.cos(base)*320,vy:Math.sin(base)*320,owner,life:5,homing:hasHoming,homingTime:hasHoming?1.0:0});
+  arrows.push({x:from.x+Math.cos(base)*(from.r+10),y:from.y+Math.sin(base)*(from.r+10),vx:Math.cos(base)*320,vy:Math.sin(base)*320,owner,life:5,homing});
   (extra||[]).forEach(off=>{
     const ang=base+off;
-    arrows.push({x:from.x+Math.cos(ang)*(from.r+10),y:from.y+Math.sin(ang)*(from.r+10),vx:Math.cos(ang)*320,vy:Math.sin(ang)*320,owner,life:5,homing:hasHoming,homingTime:hasHoming?1.0:0});
+    arrows.push({x:from.x+Math.cos(ang)*(from.r+10),y:from.y+Math.sin(ang)*(from.r+10),vx:Math.cos(ang)*320,vy:Math.sin(ang)*320,owner,life:5,homing});
   });
 }
 
