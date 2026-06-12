@@ -23,9 +23,9 @@ function pickRandWeapon(exclude){
   return pool[Math.floor(Math.random()*pool.length)];
 }
 function getPlayerMaxHP(){
-  let h=MAX_HP[playerWeapon]||8;
-  if(playerR2==='extra_hp')h+=5;
-  if(playerR3==='r3_hp')h+=5;
+  let h=MAX_HP[playerWeapon]||80;
+  if(playerR2==='extra_hp')h+=50;
+  if(playerR3==='r3_hp')h+=50;
   return h;
 }
 function getEnemyMaxHP(){
