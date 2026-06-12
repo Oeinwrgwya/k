@@ -23,15 +23,15 @@ function pickRandWeapon(exclude){
   return pool[Math.floor(Math.random()*pool.length)];
 }
 function getPlayerMaxHP(){
-  let h=MAX_HP[playerWeapon]||80;
-  if(playerR2==='extra_hp')h+=50;
-  if(playerR3==='r3_hp')h+=50;
+  let h=MAX_HP[playerWeapon]||8;
+  if(playerR2==='extra_hp')h+=5;
+  if(playerR3==='r3_hp')h+=5;
   return h;
 }
 function getEnemyMaxHP(){
-  let h=MAX_HP[enemyWeapon]||80;
-  if(enemyR2==='extra_hp')h+=50;
-  if(enemyR3==='r3_hp')h+=50;
+  let h=MAX_HP[enemyWeapon]||8;
+  if(enemyR2==='extra_hp')h+=5;
+  if(enemyR3==='r3_hp')h+=5;
   return h;
 }
 
@@ -58,6 +58,7 @@ function startRun(){
   playerR1=playerR2=playerR3=null;
   enemyWeapon=enemyR1=enemyR2=enemyR3=null;
   nextEnemyWeapon=nextEnemyR1=nextEnemyR2=nextEnemyR3=null;
+  gold=0; inventory=[];
   prepareNextEnemy();
   launchNextFight();
 }
@@ -80,8 +81,8 @@ function startBattle(){
   enemy={x:W-130,y:H/2,vx:ev.vx,vy:ev.vy,r:R,weapon:enemyWeapon||'sword',color:'#e63946',alive:true,
          hp:getEnemyMaxHP(),aimAngle:Math.PI,sword:makeSword(),shield:{timer:0,blocking:false,blockTimer:0}};
   // safety check
-  if(!player.hp||player.hp<=0)player.hp=MAX_HP[playerWeapon]||80;
-  if(!enemy.hp||enemy.hp<=0)enemy.hp=MAX_HP[enemyWeapon]||80;
+  if(!player.hp||player.hp<=0)player.hp=MAX_HP[playerWeapon]||8;
+  if(!enemy.hp||enemy.hp<=0)enemy.hp=MAX_HP[enemyWeapon]||8;
   arrows=[];particles=[];
   arrowTimers={player:0,enemy:0,playerShot:0,enemyShot:0};
   lastHit={player:-999,enemy:-999};
@@ -92,12 +93,8 @@ function startBattle(){
 }
 
 function updateHPBars(){
-  const playerMaxHP=getPlayerMaxHP();
-  const enemyMaxHP=getEnemyMaxHP();
-  document.getElementById('hp-bar-player').style.width=(player.hp/playerMaxHP*100)+'%';
-  document.getElementById('hp-bar-enemy').style.width=(enemy.hp/enemyMaxHP*100)+'%';
-  document.getElementById('hp-text-player').textContent=player.hp+'/'+playerMaxHP;
-  document.getElementById('hp-text-enemy').textContent=enemy.hp+'/'+enemyMaxHP;
+  document.getElementById('hp-bar-player').style.width=(player.hp/getPlayerMaxHP()*100)+'%';
+  document.getElementById('hp-bar-enemy').style.width=(enemy.hp/getEnemyMaxHP()*100)+'%';
 }
 
 function loop(){
@@ -123,12 +120,12 @@ function update(dt){
   for(let i=arrows.length-1;i>=0;i--){
     const a=arrows[i];
     a.x+=a.vx*dt;a.y+=a.vy*dt;a.life-=dt;
-if(a.homing){
-  const ht=a.owner==='player'?enemy:player;
-  const hx=ht.x-a.x,hy=ht.y-a.y,hd=Math.sqrt(hx*hx+hy*hy)||1;
-  a.vx+=(hx/hd)*180*dt; a.vy+=(hy/hd)*180*dt;
-  const s2=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
-  if(s2>360){a.vx=a.vx/s2*360;a.vy=a.vy/s2*360;}
+    if(a.homing){
+      const ht=a.owner==='player'?enemy:player;
+      const hx=ht.x-a.x,hy=ht.y-a.y,hd=Math.sqrt(hx*hx+hy*hy)||1;
+      a.vx+=(hx/hd)*600*dt;a.vy+=(hy/hd)*600*dt;
+      const s2=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
+      if(s2>400){a.vx=a.vx/s2*400;a.vy=a.vy/s2*400;}
     }
     if(a.x<0||a.x>W||a.y<0||a.y>H||a.life<=0){arrows.splice(i,1);continue;}
     const tgt=a.owner==='player'?enemy:player;
@@ -156,16 +153,20 @@ if(a.homing){
     const dx=a.x-tgt.x,dy=a.y-tgt.y;
     if(Math.sqrt(dx*dx+dy*dy)<tgt.r+4){
       const sp=Math.sqrt(a.vx*a.vx+a.vy*a.vy);
-      tgt.vx=(a.vx/sp)*PUSH_SCALE*0.5;tgt.vy=(a.vy/sp)*PUSH_SCALE*0.5;
       const isP=a.owner==='player';
-      let dmg=10,isCrit=false;
+      const r1shooter=getR1('bow',isP?playerR1:enemyR1);
+      const knockMult=(r1shooter&&r1shooter.weakKnockback)?0.03:0.5;
+      tgt.vx=(a.vx/sp)*PUSH_SCALE*knockMult;tgt.vy=(a.vy/sp)*PUSH_SCALE*knockMult;
+      let dmg=1,isCrit=false;
       const r1b=getR1('bow',isP?playerR1:enemyR1);
-      if(r1b&&r1b.critChance&&Math.random()<r1b.critChance){dmg+=20;isCrit=true;}
+      if(r1b&&r1b.critChance&&Math.random()<r1b.critChance){dmg+=2;isCrit=true;}
+      // item crit bonus (player only)
+      if(isP&&Math.random()<getItemCritChance()){dmg+=2;isCrit=true;}
       const r2b=getR2('bow',isP?playerR2:enemyR2);
-      if(r2b&&r2b.id==='homing_crit'&&Math.random()<0.15){dmg+=20;isCrit=true;}
+      if(r2b&&r2b.id==='homing_crit'&&Math.random()<0.15){dmg+=2;isCrit=true;}
       const r3=getR3(isP?playerR3:enemyR3);
-      if(r3&&r3.id==='r3_crit'&&Math.random()<0.15){dmg+=20;isCrit=true;}
-      if(r3&&r3.id==='r3_dmg')dmg+=10;
+      if(r3&&r3.id==='r3_crit'&&Math.random()<0.15){dmg+=2;isCrit=true;}
+      if(r3&&r3.id==='r3_dmg')dmg+=1;
       arrows.splice(i,1);
       if(isCrit)spawnCrit(tgt.x,tgt.y,isP?'#a0ff60':'#ffcc00');
       damage(tgt,dmg);
@@ -177,18 +178,21 @@ if(a.homing){
 // Round flow:
 // Battle 1 done → R1 upgrade (weapon path)
 // Battle 2 done → R2 upgrade (weapon passive)
-// Battle 3 done → R3 upgrade (universal stat: +10dmg / +50hp / 15%crit)
+// Battle 3 done → R3 upgrade (universal stat: +1dmg / +5hp / 15%crit)
 // Battle 4+ done → hub only
 function endGame(result){
   if(!gameRunning||gameEnded)return;
   gameEnded=true;gameRunning=false;clearInterval(animFrame);animFrame=null;
   roundCount++;
+  // gold reward
+  if(result==='win')       gold+=3;
+  else if(result==='lose') gold+=1;
   setTimeout(()=>{
     const t=result==='win'?'Victory':result==='lose'?'Defeat':'Draw';
-    const s='';
     const c=result==='win'?'win':result==='lose'?'lose':'draw';
     document.getElementById('result-title').textContent=t;
     document.getElementById('result-title').className='result-title '+c;
+    document.getElementById('result-gold').textContent='🪙 +'+(result==='win'?3:1);
     document.getElementById('btn-continue').textContent='Next';
     showScreen('result-screen');
   },500);
@@ -220,7 +224,7 @@ function showUpgradeScreen(rnd){
   document.getElementById('btn-upgrade').classList.remove('active');
   document.getElementById('upgrade-grid').innerHTML=pool.map(u=>{
     const stats=(u.stats||[]).map(s=>`<span class="stat-pill ${s.g?'stat-good':'stat-bad'}">${s.t}</span>`).join('');
-    return `<div class="upgrade-card" id="upg-${u.id}" onclick="selectUpgrade('${u.id}')"><div class="upgrade-badge">✓</div><span class="upgrade-icon">${u.icon}</span><div class="upgrade-name">${u.name}</div><div class="upgrade-desc">${u.desc}</div>${stats}</div>`;
+    return `<div class="upgrade-card" id="upg-${u.id}" onclick="selectUpgrade('${u.id}')"><div class="upgrade-badge">✓</div><span class="upgrade-icon">${u.icon}</span><div class="upgrade-name">${u.name}</div><div class="upgrade-desc">${u.desc}</div><div class="upgrade-stats">${stats}</div></div>`;
   }).join('');
   showScreen('upgrade-screen');
 }
