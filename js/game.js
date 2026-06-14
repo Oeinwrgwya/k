@@ -160,16 +160,16 @@ function update(dt){
       const knockMult=(r1shooter&&r1shooter.weakKnockback)?0.03:0.5;
       tgt.vx=(a.vx/sp)*PUSH_SCALE*knockMult;tgt.vy=(a.vy/sp)*PUSH_SCALE*knockMult;
       const r2bDmg=getR2('bow',isP?playerR2:enemyR2);
-      let dmg=r2bDmg&&r2bDmg.id==='fast_fire'?6:1,isCrit=false;
+      let dmg=r2bDmg&&r2bDmg.id==='fast_fire'?60:10,isCrit=false;
       const r1b=getR1('bow',isP?playerR1:enemyR1);
-      if(r1b&&r1b.critChance&&Math.random()<r1b.critChance){dmg+=2;isCrit=true;}
+      if(r1b&&r1b.critChance&&Math.random()<r1b.critChance){dmg+=20;isCrit=true;}
       // item crit bonus (player only)
-      if(isP&&Math.random()<getItemCritChance()){dmg+=2;isCrit=true;}
+      if(isP&&Math.random()<getItemCritChance()){dmg+=20;isCrit=true;}
       const r2b=getR2('bow',isP?playerR2:enemyR2);
-      if(r2b&&r2b.id==='homing_crit'&&Math.random()<0.15){dmg+=2;isCrit=true;}
+      if(r2b&&r2b.id==='homing_crit'&&Math.random()<0.15){dmg+=20;isCrit=true;}
       const r3=getR3(isP?playerR3:enemyR3);
-      if(r3&&r3.id==='r3_crit'&&Math.random()<0.15){dmg+=2;isCrit=true;}
-      if(r3&&r3.id==='r3_dmg')dmg+=1;
+      if(r3&&r3.id==='r3_crit'&&Math.random()<0.15){dmg+=20;isCrit=true;}
+      if(r3&&r3.id==='r3_dmg')dmg+=10;
       arrows.splice(i,1);
       if(isCrit)spawnCrit(tgt.x,tgt.y,isP?'#a0ff60':'#ffcc00');
       damage(tgt,dmg);
