@@ -23,7 +23,7 @@ function ballCollide(a,b){
 function damage(b,amt=1){
   const key=b===player?'player':'enemy';
   const now=performance.now();
-  if(now-lastHit[key]<450)return;
+  if(now-lastHit[key]<150)return;
   lastHit[key]=now;
   b.hp=Math.max(0,b.hp-amt);
   updateHPBars();
