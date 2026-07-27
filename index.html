@@ -1,152 +1,171 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ball Battle</title>
-<style>
-  :root{--bg:#0e0e14;--panel:#16161f;--border:#2c2c40;--gold:#c9a227;--red:#e63946;--blue:#4cc9f0;--green:#57cc99;--text:#ddddf0;--dim:#606078;}
-  *{margin:0;padding:0;box-sizing:border-box;}
-  body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;min-height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;}
-  .screen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:opacity .25s;}
-  .screen.hidden{opacity:0;pointer-events:none;}
-  #menu-screen{flex-direction:column;gap:28px;}
-  .pick-label{text-align:center;font-size:13px;letter-spacing:3px;color:var(--dim);text-transform:uppercase;}
-  .weapon-grid{display:flex;gap:20px;justify-content:center;}
-  .weapon-card{width:120px;background:var(--panel);border:2px solid var(--border);border-radius:10px;padding:22px 14px 18px;cursor:pointer;text-align:center;transition:border-color .15s,background .15s;position:relative;}
-  .weapon-card:hover{border-color:#555570;}
-  .weapon-card.selected{border-color:var(--gold);background:#1b1708;}
-  .weapon-icon{font-size:40px;display:block;margin-bottom:8px;}
-  .weapon-name{font-size:13px;color:var(--dim);letter-spacing:1px;}
-  .weapon-card.selected .weapon-name{color:var(--gold);}
-  .weapon-badge{position:absolute;top:7px;right:7px;width:18px;height:18px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#000;font-weight:700;opacity:0;transition:opacity .2s;}
-  .weapon-card.selected .weapon-badge{opacity:1;}
-  .btn-fight{font-size:14px;letter-spacing:3px;padding:12px 52px;background:var(--gold);border:none;border-radius:7px;color:#1a0f00;cursor:pointer;font-weight:600;transition:opacity .2s,transform .15s;opacity:0;pointer-events:none;text-transform:uppercase;}
-  .btn-fight.visible{opacity:1;pointer-events:all;}
-  .btn-fight:hover{transform:scale(1.04);}
-  #arena-screen{flex-direction:column;gap:0;align-items:center;}
-  .hp-row{width:900px;display:flex;justify-content:space-between;align-items:center;padding:8px 4px 6px;}
-  .hp-block{display:flex;flex-direction:column;gap:4px;}
-  .hp-block.right{align-items:flex-end;}
-  .hp-label-row{display:flex;gap:8px;align-items:center;}
-  .hp-block.right .hp-label-row{flex-direction:row-reverse;}
-  .hp-text{font-size:12px;letter-spacing:1px;color:var(--text);font-weight:600;}
-  .hp-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);}
-  .hp-bar-wrap{width:180px;height:8px;background:#1a1a28;border-radius:4px;overflow:hidden;border:1px solid var(--border);}
-  .hp-bar{height:100%;border-radius:4px;transition:width .08s;}
-  #hp-bar-player{background:var(--blue);}
-  #hp-bar-enemy{background:var(--red);}
-  #upgrade-screen{flex-direction:column;gap:20px;align-items:center;}
-  .upgrade-title{font-size:24px;font-weight:700;letter-spacing:3px;color:var(--gold);text-transform:uppercase;text-align:center;}
-  .upgrade-sub{font-size:12px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;}
-  .upgrade-grid{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;max-width:800px;}
-  .upgrade-card{width:185px;background:var(--panel);border:2px solid var(--border);border-radius:12px;padding:20px 14px 16px;cursor:pointer;text-align:center;transition:border-color .15s,background .15s,transform .15s;position:relative;}
-  .upgrade-card:hover{border-color:#555570;transform:translateY(-2px);}
-  .upgrade-card.selected{border-color:var(--gold);background:#1b1708;}
-  .upgrade-icon{font-size:40px;display:block;margin-bottom:8px;}
-  .upgrade-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;letter-spacing:1px;}
-  .upgrade-card.selected .upgrade-name{color:var(--gold);}
-  .upgrade-desc{font-size:11px;color:var(--dim);line-height:1.5;}
-  .upgrade-badge{position:absolute;top:8px;right:8px;width:18px;height:18px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#000;font-weight:700;opacity:0;transition:opacity .2s;}
-  .upgrade-card.selected .upgrade-badge{opacity:1;}
-  .upgrade-stats{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:6px;}
-  .stat-pill{font-size:10px;padding:2px 7px;border-radius:20px;letter-spacing:.5px;font-weight:600;}
-  .stat-good{background:rgba(76,201,240,.15);color:#4cc9f0;border:1px solid rgba(76,201,240,.3);}
-  .stat-bad{background:rgba(230,57,70,.15);color:#e63946;border:1px solid rgba(230,57,70,.3);}
-  .btn-upgrade{font-size:14px;letter-spacing:3px;padding:12px 52px;background:var(--gold);border:none;border-radius:7px;color:#1a0f00;cursor:pointer;font-weight:600;transition:opacity .2s,transform .15s;opacity:0;pointer-events:none;text-transform:uppercase;}
-  .btn-upgrade.active{opacity:1;pointer-events:all;}
-  .btn-upgrade:hover{transform:scale(1.04);}
-  #hub-screen{flex-direction:column;gap:14px;align-items:center;position:relative;}
-  .hub-title{font-size:22px;font-weight:700;letter-spacing:3px;color:var(--gold);text-transform:uppercase;}
-  .hub-sub{font-size:12px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-top:-14px;}
-  .round-dots{display:flex;gap:8px;align-items:center;}
-  .round-dot{width:10px;height:10px;border-radius:50%;background:var(--border);transition:background .3s;}
-  .round-dot.done{background:var(--gold);}
-  .round-dot.active{background:var(--blue);}
-  .hub-stats{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:500px;}
-  .hub-stat-pill{font-size:12px;padding:5px 14px;border-radius:20px;background:var(--panel);border:1px solid var(--border);color:var(--text);letter-spacing:.5px;}
-  .hub-stat-pill.highlight{border-color:var(--gold);color:var(--gold);}
-  .btn-next-fight{font-size:14px;letter-spacing:3px;padding:13px 56px;background:var(--gold);border:none;border-radius:7px;color:#1a0f00;cursor:pointer;font-weight:600;transition:transform .15s;text-transform:uppercase;}
-  .btn-next-fight:hover{transform:scale(1.04);}
-  .btn-menu-hub{font-size:12px;letter-spacing:1px;padding:8px 32px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;transition:border-color .15s,color .15s;}
-  .btn-menu-hub:hover{border-color:var(--dim);color:var(--text);}
-  #hub-enemy-preview{position:absolute;bottom:20px;right:24px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;user-select:none;}
-  #hub-enemy-preview:hover .hub-preview-label{color:var(--text);}
-  .hub-preview-label{font-size:10px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;transition:color .15s;}
-  #result-screen{flex-direction:column;gap:20px;align-items:center;}
-  .result-title{font-size:clamp(28px,5vw,52px);font-weight:700;letter-spacing:3px;text-align:center;}
-  .result-title.win{color:var(--gold);}
-  .result-title.lose{color:var(--red);}
-  .result-title.draw{color:var(--blue);}
-  .result-sub{color:var(--dim);font-size:13px;letter-spacing:2px;text-transform:uppercase;}
-  .btn-continue{font-size:13px;letter-spacing:2px;padding:11px 28px;background:transparent;border:2px solid var(--gold);border-radius:7px;color:var(--gold);cursor:pointer;transition:background .15s;text-transform:uppercase;}
-  .btn-continue:hover{background:rgba(201,162,39,.1);}
-  .btn-menu-r{font-size:12px;letter-spacing:1px;padding:8px 32px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;transition:border-color .15s,color .15s;}
-  .btn-menu-r:hover{border-color:var(--dim);color:var(--text);}
-</style>
-</head>
-<body>
-
-<div class="screen" id="menu-screen">
-  <div class="pick-label">Choose your weapon</div>
-  <div class="weapon-grid">
-    <div class="weapon-card" id="card-sword" onclick="selectWeapon('sword')"><div class="weapon-badge">✓</div><span class="weapon-icon">⚔️</span><div class="weapon-name">Sword</div></div>
-    <div class="weapon-card" id="card-bow" onclick="selectWeapon('bow')"><div class="weapon-badge">✓</div><span class="weapon-icon">🏹</span><div class="weapon-name">Bow</div></div>
-    <div class="weapon-card" id="card-shield" onclick="selectWeapon('shield')"><div class="weapon-badge">✓</div><span class="weapon-icon">🛡️</span><div class="weapon-name">Shield</div></div>
-  </div>
-  <button class="btn-fight" id="btn-fight" onclick="startRun()">Fight</button>
-</div>
-
-<div class="screen hidden" id="arena-screen">
-  <div class="hp-row">
-    <div class="hp-block">
-      <div class="hp-label-row">
-        <div class="hp-text" id="hp-text-player">120/120</div>
-      </div>
-      <div class="hp-bar-wrap"><div class="hp-bar" id="hp-bar-player" style="width:100%"></div></div>
-    </div>
-    <div class="hp-block right">
-      <div class="hp-label-row">
-        <div class="hp-text" id="hp-text-enemy">120/120</div>
-      </div>
-      <div class="hp-bar-wrap"><div class="hp-bar" id="hp-bar-enemy" style="width:100%"></div></div>
+<div class="viewport">
+  <div id="home-view" class="page-view active">
+    <div class="menu-scroll-container">
+      <nav class="nav-list" id="nav-list"></nav>
     </div>
   </div>
-  <div style="position:relative;line-height:0;">
-    <canvas id="arena-canvas" width="900" height="600"></canvas>
-    <canvas id="sword-canvas" width="900" height="600" style="position:absolute;top:0;left:0;pointer-events:none;"></canvas>
+
+  <div id="detail-view" class="page-view">
+    <div class="detail-container">
+      <div class="detail-tag" id="detail-tag"></div>
+      <h2 class="detail-text" id="detail-content"></h2>
+      <button class="back-btn" id="back-action"></button>
+    </div>
   </div>
 </div>
+[CONFIGURATION]
+{
+"scriptId": "@ai.genially/nav-menu-about-me",
+"scope": "item",
+"allowedAnimations": ["in", "out"],
+"allowedInteractivityActions": [],
+"version": "1.0.0",
+"state": {
+"persist": true
+},
+"configSchema": {
+"title": {
+"en": "Personal Navigation Menu",
+"es": "Menú de navegación personal"
+},
 
-<div class="screen hidden" id="upgrade-screen">
-  <div class="upgrade-title" id="upg-title">Upgrade</div>
-  <div class="upgrade-sub" id="upg-sub">Choose your path</div>
-  <div class="upgrade-grid" id="upgrade-grid"></div>
-  <button class="btn-upgrade" id="btn-upgrade" onclick="applyUpgrade()">Confirm &amp; Continue</button>
-</div>
+"fields": [
+{
+"name": "mainTitle",
+"label": {
 
-<div class="screen hidden" id="hub-screen">
-  <div class="hub-title" id="hub-title">Ready</div>
-  <div class="hub-sub" id="hub-sub">Your build</div>
-  <div class="round-dots" id="round-dots"></div>
-  <div class="hub-stats" id="hub-stats"></div>
-  <button class="btn-next-fight" onclick="launchNextFight()">Fight</button>
-  <div id="hub-enemy-preview" onclick="launchNextFight()">
-    <canvas id="preview-canvas" width="90" height="90"></canvas>
-    <div class="hub-preview-label">Next Enemy ▶</div>
-  </div>
-</div>
+"en": "Main Title",
+"es": "Título principal"
+},
+"type": "textInput",
+"defaultValue": "Something about me:"
+},
+{
+"name": "menuItems",
+"label": {
+"en": "Menu Items",
+"es": "Elementos del menú"
+},
+"help": {
+"en": "Add the categories and details that will appear as sub-pages.",
+"es": "Añade las categorías y detalles que aparecerán como subpáginas."
+},
+"type": "list",
+"itemFields": [
+{
+"name": "itemLabel",
+"label": {
+"en": "Button Label (Category)",
+"es": "Etiqueta del botón (Categoría)"
+},
+"type": "textInput",
+"defaultValue": "Category"
+},
+{
+"name": "itemContent",
+"label": {
+"en": "Page Content (Detail)",
+"es": "Contenido de la página (Detalle)"
+},
+"type": "textInput",
+"defaultValue": "Detail content"
+}
+],
+"defaultValue": [
+{"itemLabel": "Mbti", "itemContent": "Intj"},
+{"itemLabel": "Enneagram", "itemContent": "6w5"},
+{"itemLabel": "Fav Song", "itemContent": "Little Dark Age"},
+{"itemLabel": "Fav Color", "itemContent": "Black"},
+{"itemLabel": "Fav Animal", "itemContent": "Raven"},
+{"itemLabel": "Fav God", "itemContent": "Hades"},
+{"itemLabel": "Fav Demon", "itemContent": "Lord Beelzebub"},
+{"itemLabel": "Fav bending (Avatar)", "itemContent": "Metal Bending"},
+{"itemLabel": "Fav titan (AOT)", "itemContent": "War Hammer Titan"},
+{"itemLabel": "Fav Quirk (MHA)", "itemContent": "Overhaul"},
+{"itemLabel": "Fav Pokemon (Pokémon)", "itemContent": "Necrozma"},
 
-<div class="screen hidden" id="result-screen">
-  <div class="result-title" id="result-title">Victory</div>
-  <button class="btn-continue" id="btn-continue" onclick="afterBattle()">Next</button>
-</div>
+{"itemLabel": "Fav Tank", "itemContent": "American T29"},
+{"itemLabel": "Fav Melee Weapon", "itemContent": "Spear"},
+{"itemLabel": "Fav Boss (DS3)", "itemContent": "Nameless King"},
+{"itemLabel": "Fav Boss (Elden Ring)", "itemContent": "Messmer the Impaler"}
+]
+},
+{
 
-<script src="js/constants.js"></script>
-<script src="js/upgrades.js"></script>
-<script src="js/physics.js"></script>
-<script src="js/weapons.js"></script>
-<script src="js/draw.js"></script>
-<script src="js/game.js"></script>
-</body>
-</html>
+"name": "backButtonLabel",
+"label": {
+"en": "Back Button Label",
+"es": "Etiqueta del botón volver"
+},
+"type": "textInput",
+"defaultValue": "← Back to Menu"
+},
+{"type": "separator"},
+{
+"type": "message",
+"message": {
+"en": "Visual Style Configuration",
+"es": "Configuración del estilo visual"
+},
+"style": "default"
+},
+{
+"name": "backgroundColor",
+"label": {
+"en": "Background Color",
+"es": "Color de fondo"
+},
+"type": "colorInput",
+"defaultValue": "#121212"
+},
+{
+"name": "titleColor",
+"label": {
+"en": "Title & Text Color",
+"es": "Color de título y texto"
+},
+"type": "colorInput",
+"defaultValue": "#FFFFFF"
+},
+{
+"name": "buttonBorderColor",
+"label": {
+"en": "Button Border Color",
+"es": "Color del borde del botón"
+},
+"type": "colorInput",
+"defaultValue": "#FFFFFF"
+},
+{
+"name": "accentColor",
+"label": {
+"en": "Accent Color (Hover)",
+"es": "Color de acento (Hover)"
+},
+"type": "colorInput",
+"defaultValue": "#FFFFFF"
+},
+{
+
+"name": "titleFont",
+"label": {
+"en": "Title Font",
+
+"es": "Fuente del título"
+},
+"type": "fontFamily",
+"defaultValue": {"name": "Unbounded", "$type": "font"}
+},
+{
+"name": "bodyFont",
+"label": {
+"en": "Body Font",
+"es": "Fuente del cuerpo"
+},
+"type": "fontFamily",
+"defaultValue": {"name": "DM Sans", "$type": "font"}
+}
+]
+}
+}
+[END_CONFIGURATION]
