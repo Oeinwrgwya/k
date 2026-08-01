@@ -1,7 +1,248 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Something about me</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #121212;
+    --text: #FFFFFF;
+    --border: #FFFFFF;
+    --accent: #FFFFFF;
+    --font-title: 'Unbounded', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin:0;
+    padding:0;
+    height:100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    overflow: hidden;
+  }
+
+  body{
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(255,255,255,0.03), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(255,255,255,0.03), transparent 40%);
+  }
+
+  .viewport{
+    position: relative;
+    width: 100%;
+    height: 100vh;
+  }
+
+  .page-view{
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(12px);
+    transition: opacity .45s ease, transform .45s ease;
+  }
+  .page-view.active{
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  /* HOME */
+  #home-view{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 6vh 6vw;
+  }
+
+  .home-inner{
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    height: 100%;
+    padding: 4vh 0;
+  }
+
+  .main-title{
+    font-family: var(--font-title);
+    font-weight: 700;
+    font-size: clamp(1.6rem, 3.2vw, 2.4rem);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  .main-title::after{
+    content: "";
+    display: block;
+    width: 46px;
+    height: 2px;
+    background: var(--accent);
+    margin-top: 1rem;
+    opacity: .6;
+  }
+
+  .menu-scroll-container{
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 6px;
+  }
+  .menu-scroll-container::-webkit-scrollbar{ width: 4px; }
+  .menu-scroll-container::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.2); border-radius: 4px; }
+
+  .nav-list{
+    display: flex;
+    flex-direction: column;
+  }
+
+  .nav-item{
+    all: unset;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.05rem 0.25rem;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    font-family: var(--font-body);
+    font-size: clamp(0.95rem, 1.6vw, 1.08rem);
+    color: var(--text);
+    transition: padding-left .25s ease, opacity .25s ease;
+  }
+  .nav-item:first-child{ border-top: 1px solid rgba(255,255,255,0.15); }
+
+  .nav-item .idx{
+    font-family: var(--font-title);
+    font-size: 0.7rem;
+    opacity: .45;
+    letter-spacing: .08em;
+    min-width: 2.2em;
+  }
+
+  .nav-item .label{
+    flex: 1;
+    text-align: left;
+  }
+
+  .nav-item .arrow{
+    font-family: var(--font-title);
+    opacity: .5;
+    transition: transform .25s ease, opacity .25s ease;
+  }
+
+  .nav-item:hover,
+  .nav-item:focus-visible{
+    padding-left: 0.7rem;
+  }
+  .nav-item:hover .arrow,
+  .nav-item:focus-visible .arrow{
+    transform: translateX(4px);
+    opacity: 1;
+    color: var(--accent);
+  }
+  .nav-item:hover .label,
+  .nav-item:focus-visible .label{
+    color: var(--accent);
+  }
+  .nav-item:focus-visible{
+    outline: 1px dashed var(--accent);
+    outline-offset: 4px;
+  }
+
+  /* DETAIL */
+  #detail-view{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 6vh 6vw;
+  }
+
+  .detail-container{
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+  }
+
+  .detail-tag{
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    opacity: .55;
+  }
+
+  .detail-tag::before{
+    content: "";
+    display: inline-block;
+    width: 22px;
+    height: 1px;
+    background: var(--accent);
+    margin-right: 10px;
+    vertical-align: middle;
+    opacity: .8;
+  }
+
+  .detail-text{
+    font-family: var(--font-title);
+    font-weight: 600;
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    line-height: 1.15;
+    margin: 0;
+  }
+
+  .back-btn{
+    all: unset;
+    cursor: pointer;
+    margin-top: 1.5rem;
+    align-self: flex-start;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 0.65rem 1.3rem;
+    border-radius: 999px;
+    transition: background .25s ease, color .25s ease, border-color .25s ease;
+  }
+  .back-btn:hover,
+  .back-btn:focus-visible{
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+  .back-btn:focus-visible{ outline: none; }
+
+  @media (max-width: 560px){
+    #home-view, #detail-view{ padding: 5vh 6vw; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .page-view{ transition: none; }
+    .nav-item, .arrow, .back-btn{ transition: none; }
+  }
+</style>
+</head>
+<body>
+
 <div class="viewport">
   <div id="home-view" class="page-view active">
-    <div class="menu-scroll-container">
-      <nav class="nav-list" id="nav-list"></nav>
+    <div class="home-inner">
+      <h1 class="main-title" id="main-title">Something about me:</h1>
+      <div class="menu-scroll-container">
+        <nav class="nav-list" id="nav-list"></nav>
+      </div>
     </div>
   </div>
 
@@ -9,163 +250,73 @@
     <div class="detail-container">
       <div class="detail-tag" id="detail-tag"></div>
       <h2 class="detail-text" id="detail-content"></h2>
-      <button class="back-btn" id="back-action"></button>
+      <button class="back-btn" id="back-action">← Back to Menu</button>
     </div>
   </div>
 </div>
-[CONFIGURATION]
-{
-"scriptId": "@ai.genially/nav-menu-about-me",
-"scope": "item",
-"allowedAnimations": ["in", "out"],
-"allowedInteractivityActions": [],
-"version": "1.0.0",
-"state": {
-"persist": true
-},
-"configSchema": {
-"title": {
-"en": "Personal Navigation Menu",
-"es": "Menú de navegación personal"
-},
 
-"fields": [
-{
-"name": "mainTitle",
-"label": {
+<script>
+  // ---- Konfiguracja (dane domyślne z komponentu Genially) ----
+  const CONFIG = {
+    mainTitle: "Something about me:",
+    backButtonLabel: "← Back to Menu",
+    menuItems: [
+      { itemLabel: "Mbti", itemContent: "Intj" },
+      { itemLabel: "Enneagram", itemContent: "6w5" },
+      { itemLabel: "Fav Song", itemContent: "Little Dark Age" },
+      { itemLabel: "Fav Color", itemContent: "Black" },
+      { itemLabel: "Fav Animal", itemContent: "Raven" },
+      { itemLabel: "Fav God", itemContent: "Hades" },
+      { itemLabel: "Fav Demon", itemContent: "Lord Beelzebub" },
+      { itemLabel: "Fav bending (Avatar)", itemContent: "Metal Bending" },
+      { itemLabel: "Fav titan (AOT)", itemContent: "War Hammer Titan" },
+      { itemLabel: "Fav Quirk (MHA)", itemContent: "Overhaul" },
+      { itemLabel: "Fav Pokemon (Pokémon)", itemContent: "Necrozma" },
+      { itemLabel: "Fav Tank", itemContent: "American T29" },
+      { itemLabel: "Fav Melee Weapon", itemContent: "Spear" },
+      { itemLabel: "Fav Boss (DS3)", itemContent: "Nameless King" },
+      { itemLabel: "Fav Boss (Elden Ring)", itemContent: "Messmer the Impaler" }
+    ]
+  };
 
-"en": "Main Title",
-"es": "Título principal"
-},
-"type": "textInput",
-"defaultValue": "Something about me:"
-},
-{
-"name": "menuItems",
-"label": {
-"en": "Menu Items",
-"es": "Elementos del menú"
-},
-"help": {
-"en": "Add the categories and details that will appear as sub-pages.",
-"es": "Añade las categorías y detalles que aparecerán como subpáginas."
-},
-"type": "list",
-"itemFields": [
-{
-"name": "itemLabel",
-"label": {
-"en": "Button Label (Category)",
-"es": "Etiqueta del botón (Categoría)"
-},
-"type": "textInput",
-"defaultValue": "Category"
-},
-{
-"name": "itemContent",
-"label": {
-"en": "Page Content (Detail)",
-"es": "Contenido de la página (Detalle)"
-},
-"type": "textInput",
-"defaultValue": "Detail content"
-}
-],
-"defaultValue": [
-{"itemLabel": "Mbti", "itemContent": "Intj"},
-{"itemLabel": "Enneagram", "itemContent": "6w5"},
-{"itemLabel": "Fav Song", "itemContent": "Little Dark Age"},
-{"itemLabel": "Fav Color", "itemContent": "Black"},
-{"itemLabel": "Fav Animal", "itemContent": "Raven"},
-{"itemLabel": "Fav God", "itemContent": "Hades"},
-{"itemLabel": "Fav Demon", "itemContent": "Lord Beelzebub"},
-{"itemLabel": "Fav bending (Avatar)", "itemContent": "Metal Bending"},
-{"itemLabel": "Fav titan (AOT)", "itemContent": "War Hammer Titan"},
-{"itemLabel": "Fav Quirk (MHA)", "itemContent": "Overhaul"},
-{"itemLabel": "Fav Pokemon (Pokémon)", "itemContent": "Necrozma"},
+  // ---- Render ----
+  const homeView = document.getElementById('home-view');
+  const detailView = document.getElementById('detail-view');
+  const navList = document.getElementById('nav-list');
+  const mainTitleEl = document.getElementById('main-title');
+  const detailTag = document.getElementById('detail-tag');
+  const detailContent = document.getElementById('detail-content');
+  const backBtn = document.getElementById('back-action');
 
-{"itemLabel": "Fav Tank", "itemContent": "American T29"},
-{"itemLabel": "Fav Melee Weapon", "itemContent": "Spear"},
-{"itemLabel": "Fav Boss (DS3)", "itemContent": "Nameless King"},
-{"itemLabel": "Fav Boss (Elden Ring)", "itemContent": "Messmer the Impaler"}
-]
-},
-{
+  mainTitleEl.textContent = CONFIG.mainTitle;
+  backBtn.textContent = CONFIG.backButtonLabel;
 
-"name": "backButtonLabel",
-"label": {
-"en": "Back Button Label",
-"es": "Etiqueta del botón volver"
-},
-"type": "textInput",
-"defaultValue": "← Back to Menu"
-},
-{"type": "separator"},
-{
-"type": "message",
-"message": {
-"en": "Visual Style Configuration",
-"es": "Configuración del estilo visual"
-},
-"style": "default"
-},
-{
-"name": "backgroundColor",
-"label": {
-"en": "Background Color",
-"es": "Color de fondo"
-},
-"type": "colorInput",
-"defaultValue": "#121212"
-},
-{
-"name": "titleColor",
-"label": {
-"en": "Title & Text Color",
-"es": "Color de título y texto"
-},
-"type": "colorInput",
-"defaultValue": "#FFFFFF"
-},
-{
-"name": "buttonBorderColor",
-"label": {
-"en": "Button Border Color",
-"es": "Color del borde del botón"
-},
-"type": "colorInput",
-"defaultValue": "#FFFFFF"
-},
-{
-"name": "accentColor",
-"label": {
-"en": "Accent Color (Hover)",
-"es": "Color de acento (Hover)"
-},
-"type": "colorInput",
-"defaultValue": "#FFFFFF"
-},
-{
+  CONFIG.menuItems.forEach((item, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'nav-item';
+    btn.innerHTML = `
+      <span class="idx">${String(i + 1).padStart(2, '0')}</span>
+      <span class="label">${item.itemLabel}</span>
+      <span class="arrow">→</span>
+    `;
+    btn.addEventListener('click', () => showDetail(item));
+    navList.appendChild(btn);
+  });
 
-"name": "titleFont",
-"label": {
-"en": "Title Font",
+  function showDetail(item){
+    detailTag.textContent = item.itemLabel;
+    detailContent.textContent = item.itemContent;
+    homeView.classList.remove('active');
+    detailView.classList.add('active');
+  }
 
-"es": "Fuente del título"
-},
-"type": "fontFamily",
-"defaultValue": {"name": "Unbounded", "$type": "font"}
-},
-{
-"name": "bodyFont",
-"label": {
-"en": "Body Font",
-"es": "Fuente del cuerpo"
-},
-"type": "fontFamily",
-"defaultValue": {"name": "DM Sans", "$type": "font"}
-}
-]
-}
-}
-[END_CONFIGURATION]
+  function showHome(){
+    detailView.classList.remove('active');
+    homeView.classList.add('active');
+  }
+
+  backBtn.addEventListener('click', showHome);
+</script>
+
+</body>
+</html>
