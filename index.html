@@ -163,17 +163,29 @@
   /* DETAIL */
   #detail-view{
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
-    padding: 6vh 6vw;
+    padding: 6vh 10vw 6vh 8vw;
   }
 
   .detail-container{
     width: 100%;
-    max-width: 640px;
+    max-width: 720px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 2.5rem;
+  }
+
+  .detail-text-col{
     display: flex;
     flex-direction: column;
     gap: 1.4rem;
+    align-items: flex-start;
+    text-align: left;
+    flex: 1;
+    min-width: 0;
   }
 
   .detail-tag{
@@ -193,6 +205,20 @@
     margin-right: 10px;
     vertical-align: middle;
     opacity: .8;
+  }
+
+  .detail-image{
+    display: none;
+    max-width: min(240px, 34vw);
+    max-height: 40vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 12px 28px rgba(0,0,0,0.55));
+    flex-shrink: 0;
+  }
+  .detail-image.visible{
+    display: block;
   }
 
   .detail-text{
@@ -226,6 +252,15 @@
 
   @media (max-width: 560px){
     #home-view, #detail-view{ padding: 5vh 6vw; }
+    .detail-container{
+      flex-direction: column-reverse;
+      align-items: flex-start;
+      gap: 1.4rem;
+    }
+    .detail-image{
+      max-width: min(200px, 50vw);
+      max-height: 24vh;
+    }
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -248,9 +283,12 @@
 
   <div id="detail-view" class="page-view">
     <div class="detail-container">
-      <div class="detail-tag" id="detail-tag"></div>
-      <h2 class="detail-text" id="detail-content"></h2>
-      <button class="back-btn" id="back-action">← Back to Menu</button>
+      <div class="detail-text-col">
+        <div class="detail-tag" id="detail-tag"></div>
+        <h2 class="detail-text" id="detail-content"></h2>
+        <button class="back-btn" id="back-action">← Back to Menu</button>
+      </div>
+      <img class="detail-image" id="detail-image" alt="" />
     </div>
   </div>
 </div>
@@ -260,21 +298,24 @@
   const CONFIG = {
     mainTitle: "Something about me:",
     backButtonLabel: "← Back to Menu",
+    // itemImage jest opcjonalne — jeśli zostawisz pusty string "", obrazek się nie pokaże.
+    // Najlepiej używać PNG bez tła (przezroczyste), np. z folderu assets/ w Twoim repo:
+    // itemImage: "assets/raven.png"
     menuItems: [
-      { itemLabel: "Mbti", itemContent: "Intj" },
-      { itemLabel: "Enneagram", itemContent: "6w5" },
-      { itemLabel: "Fav Color", itemContent: "Black" },
-      { itemLabel: "Fav Animal", itemContent: "Raven" },
-      { itemLabel: "Fav God", itemContent: "Hades" },
-      { itemLabel: "Fav Demon", itemContent: "Lord Beelzebub" },
-      { itemLabel: "Fav bending (Avatar)", itemContent: "Metal Bending" },
-      { itemLabel: "Fav titan (AOT)", itemContent: "War Hammer Titan" },
-      { itemLabel: "Fav Quirk (MHA)", itemContent: "Overhaul" },
-      { itemLabel: "Fav Pokemon (Pokémon)", itemContent: "Necrozma" },
-      { itemLabel: "Fav Tank", itemContent: "American T29" },
-      { itemLabel: "Fav Melee Weapon", itemContent: "Spear" },
-      { itemLabel: "Fav Boss (DS3)", itemContent: "Nameless King" },
-      { itemLabel: "Fav Boss (Elden Ring)", itemContent: "Messmer the Impaler" }
+      { itemLabel: "Mbti", itemContent: "Intj", itemImage: "" },
+      { itemLabel: "Enneagram", itemContent: "6w5", itemImage: "" },
+      { itemLabel: "Fav Color", itemContent: "Black", itemImage: "" },
+      { itemLabel: "Fav Animal", itemContent: "Raven", itemImage: "" },
+      { itemLabel: "Fav God", itemContent: "Hades", itemImage: "" },
+      { itemLabel: "Fav Demon", itemContent: "Lord Beelzebub", itemImage: "" },
+      { itemLabel: "Fav bending (Avatar)", itemContent: "Metal Bending", itemImage: "" },
+      { itemLabel: "Fav titan (AOT)", itemContent: "War Hammer Titan", itemImage: "" },
+      { itemLabel: "Fav Quirk (MHA)", itemContent: "Overhaul", itemImage: "" },
+      { itemLabel: "Fav Pokemon (Pokémon)", itemContent: "Necrozma", itemImage: "assets/necrozma.png" },
+      { itemLabel: "Fav Tank", itemContent: "American T29", itemImage: "" },
+      { itemLabel: "Fav Melee Weapon", itemContent: "Spear", itemImage: "" },
+      { itemLabel: "Fav Boss (DS3)", itemContent: "Nameless King", itemImage: "" },
+      { itemLabel: "Fav Boss (Elden Ring)", itemContent: "Messmer the Impaler", itemImage: "" }
     ]
   };
 
@@ -284,6 +325,7 @@
   const navList = document.getElementById('nav-list');
   const mainTitleEl = document.getElementById('main-title');
   const detailTag = document.getElementById('detail-tag');
+  const detailImage = document.getElementById('detail-image');
   const detailContent = document.getElementById('detail-content');
   const backBtn = document.getElementById('back-action');
 
@@ -305,6 +347,16 @@
   function showDetail(item){
     detailTag.textContent = item.itemLabel;
     detailContent.textContent = item.itemContent;
+
+    if (item.itemImage && item.itemImage.trim() !== ""){
+      detailImage.src = item.itemImage;
+      detailImage.alt = item.itemLabel;
+      detailImage.classList.add('visible');
+    } else {
+      detailImage.classList.remove('visible');
+      detailImage.removeAttribute('src');
+    }
+
     homeView.classList.remove('active');
     detailView.classList.add('active');
   }
