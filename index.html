@@ -171,7 +171,7 @@
 
   .detail-container{
     width: 100%;
-    max-width: 1400px;
+    max-width: 1650px;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -210,8 +210,8 @@
 
   .detail-image{
     display: none;
-    width: min(880px, 44vw);
-    height: 78vh;
+    width: min(800px, 42vw);
+    height: 72vh;
     object-fit: contain;
     filter: drop-shadow(0 12px 28px rgba(0,0,0,0.6));
     flex-shrink: 0;
@@ -228,26 +228,21 @@
     margin: 0;
   }
 
-  .back-btn{
-    all: unset;
-    cursor: pointer;
-    margin-top: 1.5rem;
-    align-self: flex-start;
+  .detail-description{
+    display: none;
     font-family: var(--font-body);
-    font-size: 0.9rem;
+    font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+    line-height: 1.6;
     color: var(--text);
-    border: 1px solid var(--border);
-    padding: 0.65rem 1.3rem;
-    border-radius: 999px;
-    transition: background .25s ease, color .25s ease, border-color .25s ease;
+    opacity: .75;
+    margin: 0;
+    max-width: 46ch;
   }
-  .back-btn:hover,
-  .back-btn:focus-visible{
-    background: var(--accent);
-    color: var(--bg);
-    border-color: var(--accent);
+  .detail-description.visible{
+    display: block;
   }
-  .back-btn:focus-visible{ outline: none; }
+
+
 
   @media (max-width: 560px){
     #home-view, #detail-view{ padding: 5vh 6vw; }
@@ -265,7 +260,7 @@
 
   @media (prefers-reduced-motion: reduce){
     .page-view{ transition: none; }
-    .nav-item, .arrow, .back-btn{ transition: none; }
+    .nav-item, .arrow{ transition: none; }
   }
 </style>
 </head>
@@ -286,7 +281,7 @@
       <div class="detail-text-col">
         <div class="detail-tag" id="detail-tag"></div>
         <h2 class="detail-text" id="detail-content"></h2>
-        <button class="back-btn" id="back-action">← Back to Menu</button>
+        <p class="detail-description" id="detail-description"></p>
       </div>
       <img class="detail-image" id="detail-image" alt="" />
     </div>
@@ -297,25 +292,22 @@
   // ---- Konfiguracja (dane domyślne z komponentu Genially) ----
   const CONFIG = {
     mainTitle: "Something about me:",
-    backButtonLabel: "← Back to Menu",
-    // itemImage jest opcjonalne — jeśli zostawisz pusty string "", obrazek się nie pokaże.
-    // Najlepiej używać PNG bez tła (przezroczyste), np. z folderu assets/ w Twoim repo:
-    // itemImage: "assets/raven.png"
+    // itemDescription jest opcjonalne — jeśli niepuste, pojawi się pod tytułem po wejściu na stronę.
     menuItems: [
-      { itemLabel: "Mbti", itemContent: "Intj", itemImage: "" },
-      { itemLabel: "Enneagram", itemContent: "6w5", itemImage: "" },
-      { itemLabel: "Fav Color", itemContent: "Black", itemImage: "" },
-      { itemLabel: "Fav Animal", itemContent: "Raven", itemImage: "" },
-      { itemLabel: "Fav God", itemContent: "Hades", itemImage: "" },
-      { itemLabel: "Fav Demon", itemContent: "Lord Beelzebub", itemImage: "" },
-      { itemLabel: "Fav bending (Avatar)", itemContent: "Metal Bending", itemImage: "" },
-      { itemLabel: "Fav titan (AOT)", itemContent: "War Hammer Titan", itemImage: "" },
-      { itemLabel: "Fav Quirk (MHA)", itemContent: "Overhaul", itemImage: "" },
-      { itemLabel: "Fav Pokemon (Pokémon)", itemContent: "Necrozma", itemImage: "assets/necrozma.png" },
-      { itemLabel: "Fav Tank", itemContent: "American T29", itemImage: "" },
-      { itemLabel: "Fav Melee Weapon", itemContent: "Spear", itemImage: "" },
-      { itemLabel: "Fav Boss (DS3)", itemContent: "Nameless King", itemImage: "" },
-      { itemLabel: "Fav Boss (Elden Ring)", itemContent: "Messmer the Impaler", itemImage: "" }
+      { itemLabel: "Mbti", itemContent: "Intj", itemImage: "", itemDescription: "" },
+      { itemLabel: "Enneagram", itemContent: "6w5", itemImage: "", itemDescription: "" },
+      { itemLabel: "Fav Color", itemContent: "Black", itemImage: "", itemDescription: "" },
+      { itemLabel: "Fav Animal", itemContent: "Raven", itemImage: "", itemDescription: "" },
+      { itemLabel: "Fav God", itemContent: "Hades", itemImage: "", itemDescription: "" },
+      { itemLabel: "Fav Demon", itemContent: "Lord Beelzebub", itemImage: "", itemDescription: "" },
+      { itemLabel: "Fav bending (Avatar)", itemContent: "Metal Bending", itemImage: "", itemDescription: "" },
+      { itemLabel: "Fav titan (AOT)", itemContent: "War Hammer Titan", itemImage: "", itemDescription: "" },
+      { itemLabel: "Fav Quirk (MHA)", itemContent: "Overhaul", itemImage: "", itemDescription: "" },
+      { itemLabel: "Fav Pokemon (Pokémon)", itemContent: "Necrozma", itemImage: "assets/necrozma.png", itemDescription: "It survives by absorbing light. After a long time spent slumbering underground, impurities accumulated within it, causing its body to darken." },
+      { itemLabel: "Fav Tank", itemContent: "American T29", itemImage: "", itemDescription: "" },
+      { itemLabel: "Fav Melee Weapon", itemContent: "Spear", itemImage: "", itemDescription: "" },
+      { itemLabel: "Fav Boss (DS3)", itemContent: "Nameless King", itemImage: "", itemDescription: "" },
+      { itemLabel: "Fav Boss (Elden Ring)", itemContent: "Messmer the Impaler", itemImage: "", itemDescription: "" }
     ]
   };
 
@@ -327,10 +319,9 @@
   const detailTag = document.getElementById('detail-tag');
   const detailImage = document.getElementById('detail-image');
   const detailContent = document.getElementById('detail-content');
-  const backBtn = document.getElementById('back-action');
+  const detailDescription = document.getElementById('detail-description');
 
   mainTitleEl.textContent = CONFIG.mainTitle;
-  backBtn.textContent = CONFIG.backButtonLabel;
 
   CONFIG.menuItems.forEach((item, i) => {
     const btn = document.createElement('button');
@@ -347,6 +338,14 @@
   function showDetail(item){
     detailTag.textContent = item.itemLabel;
     detailContent.textContent = item.itemContent;
+
+    if (item.itemDescription && item.itemDescription.trim() !== ""){
+      detailDescription.textContent = item.itemDescription;
+      detailDescription.classList.add('visible');
+    } else {
+      detailDescription.textContent = "";
+      detailDescription.classList.remove('visible');
+    }
 
     if (item.itemImage && item.itemImage.trim() !== ""){
       detailImage.src = item.itemImage;
@@ -366,7 +365,14 @@
     homeView.classList.add('active');
   }
 
-  backBtn.addEventListener('click', showHome);
+  // Brak widocznego przycisku "Back to Menu" — powrót działa przez:
+  // klik w puste tło strony szczegółów oraz klawisz Escape.
+  detailView.addEventListener('click', (e) => {
+    if (e.target === detailView) showHome();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && detailView.classList.contains('active')) showHome();
+  });
 </script>
 
 </body>
