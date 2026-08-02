@@ -16,6 +16,7 @@
     --font-title: 'Unbounded', sans-serif;
     --font-body: 'DM Sans', sans-serif;
   }
+
   *{ box-sizing: border-box; }
 
   html, body{
@@ -170,7 +171,7 @@
 
   .detail-container{
     width: 100%;
-    max-width: 1650px;
+    max-width: 1500px;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -334,14 +335,32 @@
     navList.appendChild(btn);
   });
 
+  let typewriterToken = 0;
+
+  function typewriterEffect(el, text, speed){
+    const myToken = ++typewriterToken;
+    el.textContent = '';
+    let i = 0;
+    function step(){
+      if (myToken !== typewriterToken) return; // przerwane przez nowszy wpis
+      if (i < text.length){
+        el.textContent += text[i];
+        i++;
+        setTimeout(step, speed);
+      }
+    }
+    step();
+  }
+
   function showDetail(item){
     detailTag.textContent = item.itemLabel;
     detailContent.textContent = item.itemContent;
 
     if (item.itemDescription && item.itemDescription.trim() !== ""){
-      detailDescription.textContent = item.itemDescription;
       detailDescription.classList.add('visible');
+      typewriterEffect(detailDescription, item.itemDescription, 22);
     } else {
+      typewriterToken++; // anuluj ewentualną trwającą animację
       detailDescription.textContent = "";
       detailDescription.classList.remove('visible');
     }
