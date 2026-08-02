@@ -171,7 +171,7 @@
 
   .detail-container{
     width: 100%;
-    max-width: 1500px;
+    max-width: 1540px;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -215,6 +215,7 @@
     object-fit: contain;
     filter: drop-shadow(0 12px 28px rgba(0,0,0,0.6));
     flex-shrink: 0;
+    transform: translateY(-18px);
   }
   .detail-image.visible{
     display: block;
@@ -236,7 +237,7 @@
     color: var(--text);
     opacity: .75;
     margin: 0;
-    max-width: 46ch;
+    max-width: 34ch;
   }
   .detail-description.visible{
     display: block;
@@ -358,7 +359,7 @@
 
     if (item.itemDescription && item.itemDescription.trim() !== ""){
       detailDescription.classList.add('visible');
-      typewriterEffect(detailDescription, item.itemDescription, 22);
+      typewriterEffect(detailDescription, item.itemDescription, 10);
     } else {
       typewriterToken++; // anuluj ewentualną trwającą animację
       detailDescription.textContent = "";
