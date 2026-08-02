@@ -213,10 +213,6 @@
 
   .detail-image-hit{
     position: absolute;
-    top: 25%;
-    left: 25%;
-    width: 50%;
-    height: 50%;
   }
   .detail-image-hit.swappable{
     cursor: pointer;
@@ -347,6 +343,24 @@
     step();
   }
 
+  function positionImageHit(){
+    if (!detailImageWrap.classList.contains('visible')) return;
+    const imgRect = detailImage.getBoundingClientRect();
+    const wrapRect = detailImageWrap.getBoundingClientRect();
+    if (imgRect.width === 0 || imgRect.height === 0) return;
+
+    const offsetLeft = imgRect.left - wrapRect.left;
+    const offsetTop = imgRect.top - wrapRect.top;
+
+    detailImageHit.style.left = (offsetLeft + imgRect.width / 4) + 'px';
+    detailImageHit.style.top = (offsetTop + imgRect.height / 4) + 'px';
+    detailImageHit.style.width = (imgRect.width / 2) + 'px';
+    detailImageHit.style.height = (imgRect.height / 2) + 'px';
+  }
+
+  detailImage.addEventListener('load', positionImageHit);
+  window.addEventListener('resize', positionImageHit);
+
   function showDetail(item){
     detailTag.textContent = item.itemLabel;
     detailContent.textContent = item.itemContent;
@@ -371,6 +385,10 @@
       } else {
         detailImageHit.classList.remove('swappable');
       }
+      // Odśwież pozycję hit-area od razu (na wypadek gdy obraz jest już w cache
+      // i event 'load' się nie odpali) oraz po następnej klatce (po layoucie).
+      positionImageHit();
+      requestAnimationFrame(positionImageHit);
     } else {
       detailImageWrap.classList.remove('visible');
       detailImageHit.classList.remove('swappable');
