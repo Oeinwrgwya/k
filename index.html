@@ -220,6 +220,9 @@
   .detail-image.visible{
     display: block;
   }
+  .detail-image.swappable{
+    cursor: pointer;
+  }
 
   .detail-text{
     font-family: var(--font-title);
@@ -304,7 +307,7 @@
       { itemLabel: "Fav bending (Avatar)", itemContent: "Metal Bending", itemImage: "", itemDescription: "" },
       { itemLabel: "Fav titan (AOT)", itemContent: "War Hammer Titan", itemImage: "", itemDescription: "" },
       { itemLabel: "Fav Quirk (MHA)", itemContent: "Overhaul", itemImage: "", itemDescription: "" },
-      { itemLabel: "Fav Pokemon (Pokémon)", itemContent: "Necrozma", itemImage: "assets/necrozma.png", itemDescription: "It survives by absorbing light. After a long time spent slumbering underground, impurities accumulated within it, causing its body to darken. He's also very cute." },
+      { itemLabel: "Fav Pokemon (Pokémon)", itemContent: "Necrozma", itemImage: "assets/necrozma.png", itemImageAlt: "assets/necrozma2.png", itemDescription: "It survives by absorbing light. After a long time spent slumbering underground, impurities accumulated within it, causing its body to darken." },
       { itemLabel: "Fav Tank", itemContent: "American T29", itemImage: "", itemDescription: "" },
       { itemLabel: "Fav Melee Weapon", itemContent: "Spear", itemImage: "", itemDescription: "" },
       { itemLabel: "Fav Boss (DS3)", itemContent: "Nameless King", itemImage: "", itemDescription: "" },
@@ -370,14 +373,32 @@
       detailImage.src = item.itemImage;
       detailImage.alt = item.itemLabel;
       detailImage.classList.add('visible');
+      detailImage.dataset.imageA = item.itemImage;
+      detailImage.dataset.imageB = (item.itemImageAlt && item.itemImageAlt.trim() !== "") ? item.itemImageAlt : "";
+      if (detailImage.dataset.imageB){
+        detailImage.classList.add('swappable');
+      } else {
+        detailImage.classList.remove('swappable');
+      }
     } else {
       detailImage.classList.remove('visible');
+      detailImage.classList.remove('swappable');
       detailImage.removeAttribute('src');
+      delete detailImage.dataset.imageA;
+      delete detailImage.dataset.imageB;
     }
 
     homeView.classList.remove('active');
     detailView.classList.add('active');
   }
+
+  detailImage.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const { imageA, imageB } = detailImage.dataset;
+    if (!imageB) return;
+    const isShowingA = detailImage.getAttribute('src') === imageA;
+    detailImage.src = isShowingA ? imageB : imageA;
+  });
 
   function showHome(){
     detailView.classList.remove('active');
