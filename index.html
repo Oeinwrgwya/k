@@ -55,7 +55,6 @@
     transform: translateY(0);
   }
 
-  /* HOME */
   #home-view{
     display: flex;
     justify-content: center;
@@ -142,7 +141,6 @@
     outline-offset: 4px;
   }
 
-  /* DETAIL */
   #detail-view{
     display: flex;
     justify-content: flex-start;
@@ -240,8 +238,6 @@
     display: block;
   }
 
-
-
   @media (max-width: 560px){
     #home-view, #detail-view{ padding: 5vh 6vw; }
     .detail-container{
@@ -292,16 +288,12 @@
 </div>
 
 <script>
-  // ---- Konfiguracja (dane domyślne z komponentu Genially) ----
   const CONFIG = {
     mainTitle: "Something about me:",
-    // itemDescription jest opcjonalne — jeśli niepuste, pojawi się pod tytułem po wejściu na stronę.
     menuItems: [
       { itemLabel: "Fav Pokemon (Pokémon)", itemContent: "Necrozma", itemImage: "assets/necrozma.png", itemImageAlt: "assets/necrozma2.png", itemDescription: "It survives by absorbing light. After a long time spent slumbering underground, impurities accumulated within it, causing its body to darken. Yes, it also absorbed page's colors." }
     ]
   };
-
-  // ---- Render ----
   const homeView = document.getElementById('home-view');
   const detailView = document.getElementById('detail-view');
   const navList = document.getElementById('nav-list');
@@ -333,7 +325,7 @@
     el.textContent = '';
     let i = 0;
     function step(){
-      if (myToken !== typewriterToken) return; // przerwane przez nowszy wpis
+      if (myToken !== typewriterToken) return;
       if (i < text.length){
         el.textContent += text[i];
         i++;
@@ -385,8 +377,6 @@
       } else {
         detailImageHit.classList.remove('swappable');
       }
-      // Odśwież pozycję hit-area od razu (na wypadek gdy obraz jest już w cache
-      // i event 'load' się nie odpali) oraz po następnej klatce (po layoucie).
       positionImageHit();
       requestAnimationFrame(positionImageHit);
     } else {
@@ -413,9 +403,7 @@
     detailView.classList.remove('active');
     homeView.classList.add('active');
   }
-
-  // Brak widocznego przycisku "Back to Menu" — powrót działa przez:
-  // klik w puste tło strony szczegółów oraz klawisz Escape.
+  
   detailView.addEventListener('click', (e) => {
     if (e.target === detailView) showHome();
   });
@@ -423,6 +411,5 @@
     if (e.key === 'Escape' && detailView.classList.contains('active')) showHome();
   });
 </script>
-
 </body>
 </html>
