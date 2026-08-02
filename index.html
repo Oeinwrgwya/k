@@ -211,7 +211,8 @@
   .detail-image{
     display: none;
     width: min(800px, 42vw);
-    height: 72vh;
+    height: auto;
+    max-height: 72vh;
     object-fit: contain;
     filter: drop-shadow(0 12px 28px rgba(0,0,0,0.6));
     flex-shrink: 0;
@@ -257,7 +258,8 @@
     }
     .detail-image{
       width: min(280px, 70vw);
-      height: 30vh;
+      height: auto;
+      max-height: 30vh;
       margin-left: 0;
     }
   }
