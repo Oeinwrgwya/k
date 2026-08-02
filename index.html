@@ -398,6 +398,20 @@
     e.stopPropagation();
     const { imageA, imageB } = detailImage.dataset;
     if (!imageB) return;
+
+    // Hitbox ograniczony do środkowych 50% szerokości/wysokości obrazka
+    // (2x mniejszy niż cały widoczny obrazek), bez zmiany jego rozmiaru wizualnego.
+    const rect = detailImage.getBoundingClientRect();
+    const hitW = rect.width / 2;
+    const hitH = rect.height / 2;
+    const hitLeft = rect.left + (rect.width - hitW) / 2;
+    const hitTop = rect.top + (rect.height - hitH) / 2;
+    const withinHitbox =
+      e.clientX >= hitLeft && e.clientX <= hitLeft + hitW &&
+      e.clientY >= hitTop && e.clientY <= hitTop + hitH;
+
+    if (!withinHitbox) return;
+
     const isShowingA = detailImage.getAttribute('src') === imageA;
     detailImage.src = isShowingA ? imageB : imageA;
   });
